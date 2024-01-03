@@ -1,0 +1,3 @@
+<template>
+  Restore page
+</template>

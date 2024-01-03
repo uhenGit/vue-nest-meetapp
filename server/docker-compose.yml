@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  meetapp-db:
+    image: postgres:16-alpine3.18
+    ports:
+      - 127.0.0.1:5434:5432
+    environment:
+      POSTGRES_USER: meetapp
+      POSTGRES_PASSWORD: meetApp^16
+      POSTGRES_DB: meetapp
+    networks:
+      - meetapp
+networks:
+  meetapp:
