@@ -56,9 +56,9 @@ export class AuthService {
       throw new NotFoundException('Incorrect credentials');
     }
 
-    const hashMatches = await argon.verify(user.hash, dto.password);
+    const isHashMatches = await argon.verify(user.hash, dto.password);
 
-    if (!hashMatches) {
+    if (!isHashMatches) {
       throw new ForbiddenException('Incorrect credentials');
     }
 
@@ -91,7 +91,28 @@ export class AuthService {
     return !!count;
   }
 
-  async refreshToken(token: string) {}
+  async refreshTokens(refreshToken: string, userId: string): Promise<Tokens> {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user || !user.hashedRT) {
+      throw new ForbiddenException('Access denied')
+    }
+
+    const isHashMatches = await argon.verify(user.hashedRT, refreshToken);
+
+    if (!isHashMatches) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.generateTokens(userId, user.email);
+    await this.handleRefreshToken(userId, newRefreshToken);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  }
 
   async handleRefreshToken(userId: string, refreshToken: string) {
     const hash = await this.generateHash(refreshToken);

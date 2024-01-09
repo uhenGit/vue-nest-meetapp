@@ -14,13 +14,13 @@ export const CookieUserDecorator = createParamDecorator(
       return null;
     }
 
-    if (!key) {
-      return cookieToken;
-    }
-
     const decodedToken = jwt.verify(cookieToken, {
       secret: configService.get('REFRESH_TOKEN_SECRET'),
     });
+
+    if (!key) {
+      return decodedToken;
+    }
 
     return decodedToken[key];
   },

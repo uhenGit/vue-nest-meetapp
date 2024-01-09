@@ -14,7 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto } from './auth.dto';
 import { Tokens } from './types';
-import { CookieUserDecorator } from '../common/decorators/';
+import { CookieUserDecorator, CookieTokenDecorator } from '../common/decorators/';
 import { todayPlusOneWeek } from '../utils';
 
 @Controller('auth')
@@ -27,14 +27,14 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async signUp(@Body() dto: SignupDto, @Res() res: Response): Promise<void> {
     const tokens: Tokens = await this.authService.signUp(dto);
-    this.setRefreshTokenToCookies(tokens, res);
+    this.setTokensDestination(tokens, res);
   }
 
   @Post('signin')
   @HttpCode(HttpStatus.OK)
   async signIn(@Body() dto: LoginDto, @Res() res: Response): Promise<void> {
     const tokens: Tokens = await this.authService.signIn(dto);
-    this.setRefreshTokenToCookies(tokens, res);
+    this.setTokensDestination(tokens, res);
   }
 
   @Post('logout')
@@ -57,11 +57,16 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refreshToken(@CookieUserDecorator() token: string) {
-    return this.authService.refreshToken(token);
+  async refreshTokens(
+    @CookieUserDecorator('sub') userId: string,
+    @CookieTokenDecorator() token: string,
+    @Res() res: Response,
+  ) {
+    const tokens= await this.authService.refreshTokens(token, userId);
+    this.setTokensDestination(tokens, res);
   }
 
-  private setRefreshTokenToCookies(tokens: Tokens, res: Response): void {
+  private setTokensDestination(tokens: Tokens, res: Response): void {
     if (!tokens) {
       throw new UnauthorizedException();
     }
