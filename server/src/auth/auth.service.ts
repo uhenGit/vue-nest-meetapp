@@ -68,8 +68,15 @@ export class AuthService {
     return tokens;
   }
 
-  async logout(userId: string) {
-    await this.prismaService.user.updateMany({
+  // If the userId is undefined, prisma handles all the entries
+  // It should be null to prevent changes or string to find matches
+  async logout(userId: string | null): Promise<boolean> {
+    console.log('ID: ', userId);
+    if (!userId) {
+      return false;
+    }
+
+    const { count } = await this.prismaService.user.updateMany({
       where: {
         id: userId,
         hashedRT: {
@@ -80,6 +87,8 @@ export class AuthService {
         hashedRT: null,
       },
     });
+
+    return !!count;
   }
 
   async refreshToken(token: string) {}
