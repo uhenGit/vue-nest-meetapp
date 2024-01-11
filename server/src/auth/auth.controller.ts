@@ -14,7 +14,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto } from './auth.dto';
 import { Tokens } from './types';
-import { CookieUserDecorator, CookieTokenDecorator } from '../common/decorators/';
+import {
+  CookieUserDecorator,
+  CookieTokenDecorator,
+} from '../common/decorators/';
 import { todayPlusOneWeek } from '../utils';
 
 @Controller('auth')
@@ -42,16 +45,15 @@ export class AuthController {
   async logout(
     @CookieUserDecorator('sub') userId: string,
     @Res() res: Response,
-  ): Promise<boolean> {
-    const isLoggedOut = await this.authService.logout(userId);
+  ): Promise<void> {
+    await this.authService.logout(userId);
     res.cookie('refreshToken', '', {
       httpOnly: true,
+      sameSite: 'lax',
       secure: true,
       expires: new Date(),
     });
     res.sendStatus(HttpStatus.OK);
-
-    return isLoggedOut;
   }
 
   @UseGuards(AuthGuard('jwt-refresh'))
@@ -62,7 +64,7 @@ export class AuthController {
     @CookieTokenDecorator() token: string,
     @Res() res: Response,
   ) {
-    const tokens= await this.authService.refreshTokens(token, userId);
+    const tokens = await this.authService.refreshTokens(token, userId);
     this.setTokensDestination(tokens, res);
   }
 

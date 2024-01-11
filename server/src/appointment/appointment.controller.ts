@@ -1,6 +1,8 @@
 import { Body, Param, Controller, Get, Post } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { AddAppointmentDto } from './appointments.dto';
+import { AppointmentItemType } from './types';
+import { CookieUserDecorator } from '../common/decorators';
 
 // should implement Guard
 @Controller('appointments')
@@ -14,12 +16,13 @@ export class AppointmentController {
   }
 
   @Get('load-appointments/:month')
-  // instead of body decorator create getMonthDecorator to get month from params
-  // get user email from the auth guard
-  getAppointments(@Param('month') eventsDate: string): object {
+  getAppointments(
+    @Param('month') eventsDate: string,
+    @CookieUserDecorator('email') email: string,
+  ): AppointmentItemType[] {
     console.log('controller: ', eventsDate);
     return this.appointmentService.getCurrentAppointments({
-      email: 'bob@test.com',
+      email,
       eventsDate,
     });
   }

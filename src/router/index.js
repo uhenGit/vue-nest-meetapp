@@ -7,25 +7,31 @@ import { routes } from '@/router/routes.js';
 		routes,
 	});
 
-	router.beforeEach((to, from, next) => {
+	router.beforeEach(async (to, from, next) => {
 		const userStore = useUserStore();
-		const isLoggedIn = userStore.isLoggedIn;
-		console.log('storage: ', isLoggedIn, localStorage.getItem('users_token'))
-		/* if (to.name === 'home' && localStorage.getItem('users_token')) {
-			next();
-			return;
-		} */
+		// const isLoggedIn = userStore.isLoggedIn || !!localStorage.getItem('access_token');
+		console.log('storage: ', userStore.isLoggedIn, to.name);
 
-		if (isLoggedIn && !to.meta.public && to.name !== 'home') {
+		if (userStore.isLoggedIn && !to.meta.public && to.name !== 'home') {
 			return next({ name: 'home' });
 		}
 
-		if (!isLoggedIn && !to.meta.public) {
+		if (!userStore.isLoggedIn && !to.meta.public) {
 			return next({
 				name: 'login',
 				query: { ...to.query, redirect: to.fullPath },
 			})
 		}
+
+		// @todo check it twice
+		/* if (to.name === 'home') {
+			await userStore.refreshToken();
+
+			if (userStore.isLoggedIn) {
+				return next();
+			}
+			// add request to the 'refresh-token' route, and in case of success run next()
+		} */
 
 		return next();
 	});

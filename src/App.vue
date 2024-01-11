@@ -8,21 +8,29 @@ export default {
 
   computed: {
     ...mapState(useUserStore, ['isLoggedIn']),
+
+    // @todo do not need it after setting refresh method in actions
+    isUserAuthorized() {
+      return this.isLoggedIn || localStorage.getItem('access_token');
+    },
   },
 
   methods: {
     ...mapActions(useUserStore, ['logout']),
 
-    onLogout() {
-      this.logout();
-      this.$router.push({ name: 'login' });
+    async onLogout() {
+      await this.logout();
+
+      if (!this.isLoggedIn) {
+        this.$router.push({ name: 'login' });
+      }
     },
   },
 }
 </script>
 <template>
   <nav
-      v-if="isLoggedIn"
+      v-if="isUserAuthorized"
       class="bg-gray-800"
   >
     <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">

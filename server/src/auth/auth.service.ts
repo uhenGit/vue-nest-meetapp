@@ -70,13 +70,13 @@ export class AuthService {
 
   // If the userId is undefined, prisma handles all the entries
   // It should be null to prevent changes or string to find matches
-  async logout(userId: string | null): Promise<boolean> {
+  async logout(userId: string | null): Promise<void> {
     console.log('ID: ', userId);
     if (!userId) {
-      return false;
+      return;
     }
 
-    const { count } = await this.prismaService.user.updateMany({
+    await this.prismaService.user.updateMany({
       where: {
         id: userId,
         hashedRT: {
@@ -87,8 +87,6 @@ export class AuthService {
         hashedRT: null,
       },
     });
-
-    return !!count;
   }
 
   async refreshTokens(refreshToken: string, userId: string): Promise<Tokens> {
@@ -99,7 +97,7 @@ export class AuthService {
     });
 
     if (!user || !user.hashedRT) {
-      throw new ForbiddenException('Access denied')
+      throw new ForbiddenException('Access denied');
     }
 
     const isHashMatches = await argon.verify(user.hashedRT, refreshToken);
@@ -108,7 +106,8 @@ export class AuthService {
       throw new ForbiddenException('Access denied');
     }
 
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.generateTokens(userId, user.email);
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      await this.generateTokens(userId, user.email);
     await this.handleRefreshToken(userId, newRefreshToken);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
