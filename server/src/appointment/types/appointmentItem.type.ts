@@ -3,7 +3,7 @@ export type AppointmentItemType = {
   title: string;
   eventDate: Date;
   participants: string[];
-  author: string;
+  authorId: string;
   cancelled: boolean;
   cancellations: string[];
 };

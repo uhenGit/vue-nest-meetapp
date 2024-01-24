@@ -5,5 +5,5 @@ export const CookieTokenDecorator = createParamDecorator(
     const request = context.switchToHttp().getRequest();
 
     return request.cookies['refreshToken'];
-  }
-)
+  },
+);

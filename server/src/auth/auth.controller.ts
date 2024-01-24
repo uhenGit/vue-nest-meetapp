@@ -13,7 +13,7 @@ import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto } from './auth.dto';
-import { Tokens } from './types';
+import { ServiceResponse } from './types';
 import {
   CookieUserDecorator,
   CookieTokenDecorator,
@@ -29,15 +29,15 @@ export class AuthController {
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   async signUp(@Body() dto: SignupDto, @Res() res: Response): Promise<void> {
-    const tokens: Tokens = await this.authService.signUp(dto);
-    this.setTokensDestination(tokens, res);
+    const serviceResponse: ServiceResponse = await this.authService.signUp(dto);
+    this.setResponseDestination(serviceResponse, res);
   }
 
   @Post('signin')
   @HttpCode(HttpStatus.OK)
   async signIn(@Body() dto: LoginDto, @Res() res: Response): Promise<void> {
-    const tokens: Tokens = await this.authService.signIn(dto);
-    this.setTokensDestination(tokens, res);
+    const serviceResponse: ServiceResponse = await this.authService.signIn(dto);
+    this.setResponseDestination(serviceResponse, res);
   }
 
   @Post('logout')
@@ -63,12 +63,17 @@ export class AuthController {
     @CookieUserDecorator('sub') userId: string,
     @CookieTokenDecorator() token: string,
     @Res() res: Response,
-  ) {
-    const tokens = await this.authService.refreshTokens(token, userId);
-    this.setTokensDestination(tokens, res);
+  ): Promise<void> {
+    const serviceResponse: ServiceResponse =
+      await this.authService.refreshTokens(token, userId);
+    this.setResponseDestination(serviceResponse, res);
   }
 
-  private setTokensDestination(tokens: Tokens, res: Response): void {
+  private setResponseDestination(
+    serviceResponse: ServiceResponse,
+    res: Response,
+  ): void {
+    const { tokens, userId, userEmail } = serviceResponse;
     if (!tokens) {
       throw new UnauthorizedException();
     }
@@ -81,6 +86,9 @@ export class AuthController {
         this.configService.get('NODE_ENV', 'development') === 'production',
       path: '/',
     });
-    res.status(HttpStatus.CREATED).json({ accessToken: tokens.accessToken });
+    res.status(HttpStatus.CREATED).json({
+      accessToken: tokens.accessToken,
+      user: { userId, userEmail },
+    });
   }
 }
