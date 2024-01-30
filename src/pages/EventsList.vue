@@ -1,18 +1,20 @@
 <script setup>
+import { onMounted } from 'vue';
 import { useAppointmentStore } from '@/stores';
 import CalendarView from '@/components/CalendarView.vue';
-// import OneWeek from '@/components/Week.vue';
 
 const appointmentsStore = useAppointmentStore();
-console.log('handler: ', appointmentsStore.loadedMonths);
-/* appointmentsStore.initializeMonths();
-const addPrev = () => {
-  appointmentsStore.addPreviousMonth();
-}
-const addNext = () => {
-  appointmentsStore.addNextMonth();
-} */
+const currentDate = new Date();
+const initialPeriod = {
+  year: currentDate.getFullYear(),
+  month: currentDate.getMonth() + 1,
+};
+
+onMounted(() => appointmentsStore.loadCurrentMonthAppointments(initialPeriod));
 </script>
 <template>
-  <calendar-view />
+  <calendar-view
+    v-if="appointmentsStore.loadedAppointments.has(appointmentsStore.selectedPeriod)"
+  />
+  <div v-else>Loading...</div>
 </template>

@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
-import { AuthGuard } from '@nestjs/passport';
+import { RefreshTokenGuard } from './guards';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto } from './auth.dto';
 import { ServiceResponse } from './types';
@@ -56,7 +56,7 @@ export class AuthController {
     res.sendStatus(HttpStatus.OK);
   }
 
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refreshTokens(

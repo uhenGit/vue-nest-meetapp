@@ -4,37 +4,86 @@ export const useAppointmentStore = defineStore(
 	'appointmentData',
 	{
 		state: () => ({
-			loadedAppointments: [],
-			usedMonths: [],
+			loadedAppointments: new Map(),
+			selectedPeriod: '',
+			loadError: null,
 		}),
 
 		getters: {
-			loadedMonths: ({ usedMonths }) => usedMonths,
-			activeAppointments: [],
+			activeAppointments: (state) => {
+				if (typeof state.loadedAppointments === 'undefined') {
+					return {};
+				}
+
+				return state.loadedAppointments.get(state.selectedPeriod);
+			},
 			inactiveAppointments: [],
 		},
 
 		actions: {
-			async addAppointment(data, users_token) {
-				// add appointment to the DB using the user email
-				const response = await fetch('http://localhost:3001/appointments/add-appointment', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({ data, users_token }),
-				});
-				console.log('ADD appointment: ', response);
+			async addAppointment(appointment) {
+				try {
+					const response = await fetch('http://localhost:3001/appointments/add-appointment', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+						},
+						credentials: 'include',
+						body: JSON.stringify(appointment),
+					});
+
+					if (!response.ok) {
+						this.loadError = response.error;
+						return;
+					}
+
+					const newAppointment = await response.json();
+					this.injectAppointment(newAppointment);
+				} catch (err) {
+					throw new Error(`Create appointment error: ${JSON.stringify(err)}`);
+				}
 			},
 
-			addMonthToUsedList(month) {
-				this.usedMonths.push(month);
+			async loadCurrentMonthAppointments(period) {
+				this.setSelectedPeriod(period);
+
+				if (this.selectedPeriod in this.loadedAppointments) {
+					return;
+				}
+
+				try {
+					const url = `http://localhost:3001/appointments/load-appointments/${period.year}/${period.month}`
+					const response = await fetch(url, {
+						method: 'GET',
+						credentials: 'include',
+						headers: {
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+						},
+					});
+
+					if (!response.ok) {
+						this.loadError = response.error;
+						return;
+					}
+
+					const appointments = await response.json()
+					this.loadedAppointments.set(this.selectedPeriod, appointments);
+					// load appointments each time when user adds a month to the 'loadedMonths' array
+				} catch (err) {
+					console.log('LOAD ERROR: ', err);
+				}
 			},
 
-			async loadCurrentMonthAppointments() {
-				const response = await fetch('http://localhost:3001/appointments/load-appointments/:feb');
-				console.log('LOAD appointments: ', response);
-				// load appointments each time when user adds a month to the 'loadedMonths' array
+			setSelectedPeriod(period) {
+				this.selectedPeriod = `${period.month}/${period.year}`;
+			},
+
+			injectAppointment(item) {
+				const currentPeriodAppointments = this.loadedAppointments.get(this.selectedPeriod);
+				currentPeriodAppointments.push(item);
+				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
+
 			},
 		},
 	}

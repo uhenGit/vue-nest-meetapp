@@ -23,6 +23,10 @@ import { routes } from '@/router/routes.js';
 			})
 		}
 
+		if (userStore.isLoggedIn && to.name === 'home') {
+			return next();
+		}
+
 		// @todo check it twice
 		/* if (to.name === 'home') {
 			await userStore.refreshToken();

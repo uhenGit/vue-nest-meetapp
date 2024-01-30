@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddAppointmentDto, GetAppointmentsDto } from './appointments.dto';
 import { AppointmentItemType } from './types';
-import { todayPlusOneWeek } from '../utils';
 
 @Injectable({})
 export class AppointmentService {
@@ -11,35 +10,17 @@ export class AppointmentService {
   async getCurrentAppointments(
     dto: GetAppointmentsDto,
   ): Promise<AppointmentItemType[]> {
-    const appointments: AppointmentItemType[] =
-      await this.prismaService.appointment.findMany({
+    try {
+      return this.prismaService.appointment.findMany({
         where: {
           authorId: dto.userId,
           eventDate: this.buildDateQuery(dto.year, dto.month),
         },
       });
-
-    // increase appointments quantity
-    return appointments.concat([
-      {
-        id: '123',
-        title: 'Test 1',
-        eventDate: new Date(),
-        participants: ['test@bob.com'],
-        authorId: 'bob2@test.com',
-        cancelled: false,
-        cancellations: [],
-      },
-      {
-        id: '255',
-        title: 'EVENT 2',
-        eventDate: todayPlusOneWeek(),
-        participants: [],
-        authorId: 'bob@test.com',
-        cancelled: false,
-        cancellations: [],
-      },
-    ]);
+    } catch (err) {
+      // @todo add logger or bugsnag with error handler
+      throw new NotFoundException('User has no appointments');
+    }
   }
 
   async addAppointment(
@@ -65,13 +46,13 @@ export class AppointmentService {
   // @todo check what is start and what is end
   private buildDateQuery(year: number, month: number): object {
     // month beginning
-    const startDate = new Date(year, month, 1);
+    const from = new Date(year, month - 1);
     // month ending
-    const endDate = new Date(year, month - 1);
+    const to = new Date(year, month, 1);
 
     return {
-      lte: startDate,
-      gte: endDate,
+      lte: to,
+      gte: from,
     };
   }
 }

@@ -34,7 +34,7 @@ export const useUserStore = defineStore(
 					this.access_token = result.accessToken;
 					this.isLoggedIn = true;
 					this.userError = null;
-					localStorage.setItem('access_token', this.access_token);
+					localStorage.setItem('access_token', result.accessToken);
 				} catch (err) {
 					// notify about error
 					this.userError = err.message;
@@ -56,20 +56,20 @@ export const useUserStore = defineStore(
 
 					if (response.status !== 201 || result.error) {
 						this.userError = result.message;
-						this.isLoggedIn = false;
+						this.isLoggedIn = true;
 
 						return;
 					}
 
 					this.user = result.user;
-					this.access_token = result.access_token;
+					this.access_token = result.accessToken;
 					this.isLoggedIn = true;
 					this.userError = null;
 					localStorage.setItem('access_token', this.access_token);
 				} catch (err) {
 					// notify about signup error
 					this.userError = err.message;
-					this.isLoggedIn = false;
+					this.isLoggedIn = true;
 				}
 			},
 
@@ -95,13 +95,17 @@ export const useUserStore = defineStore(
 					const response = await fetch('http://localhost:3001/auth/refresh', {
 						method: 'POST',
 						credentials: 'include',
+						headers: {
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+						},
 					});
-					const newToken = await response.json();
-					// this.user = {};
+					console.log('REFRESH response: ', response);
+					const { accessToken, user } = await response.json();
+					this.user = user;
 					this.isLoggedIn = true;
-					this.access_token = newToken;
+					this.access_token = accessToken;
 					this.userError = null;
-					localStorage.setItem('access_token', newToken);
+					localStorage.setItem('access_token', accessToken);
 				} catch (err) {
 					console.error('Refresh token error: ', err);
 				}

@@ -1,13 +1,14 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { AddAppointmentDto } from './appointments.dto';
 import { AppointmentItemType } from './types';
+import { AccessTokenGuard } from '../auth/guards';
 import {
   CookieUserDecorator,
   ParamToNumberDecorator,
 } from '../common/decorators';
 
-// should implement Guard
+@UseGuards(AccessTokenGuard)
 @Controller('appointments')
 export class AppointmentController {
   constructor(private appointmentService: AppointmentService) {}
@@ -16,18 +17,13 @@ export class AppointmentController {
   async addAppointment(
     @Body() dto: AddAppointmentDto,
     @CookieUserDecorator('email') email: string,
-  ): Promise<boolean> {
+  ): Promise<AppointmentItemType> {
     const parsedBody = {
       ...dto,
       eventDate: new Date(dto.eventDate),
     };
-    console.log('Add appointment: ', email, parsedBody);
-    const result = await this.appointmentService.addAppointment(
-      parsedBody,
-      email,
-    );
-    console.log('CONTROLLER ADD: ', result);
-    return true;
+
+    return this.appointmentService.addAppointment(parsedBody, email);
   }
 
   @Get('load-appointments/:year/:month')
