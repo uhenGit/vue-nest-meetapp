@@ -43,7 +43,6 @@ export class AppointmentService {
     }
   }
 
-  // @todo check what is start and what is end
   private buildDateQuery(year: number, month: number): object {
     // month beginning
     const from = new Date(year, month - 1);

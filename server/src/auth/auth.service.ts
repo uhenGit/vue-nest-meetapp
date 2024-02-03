@@ -71,7 +71,6 @@ export class AuthService {
   // If the userId is undefined, prisma handles all the entries
   // It should be null to prevent changes or string to find matches
   async logout(userId: string | null): Promise<void> {
-    console.log('ID: ', userId);
     if (!userId) {
       return;
     }

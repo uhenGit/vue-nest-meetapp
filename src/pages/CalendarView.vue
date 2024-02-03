@@ -20,23 +20,38 @@ export default {
         plugins: [dayGridPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
         dateClick: this.handleDateClick,
-        events: [],
+        events: function(info, successCb, failureCb) {
+          const period = {
+            year: info.start.getFullYear(),
+            month: info.start.getMonth() + 1,
+          };
+          const appointmentsStore = useAppointmentStore();
+          appointmentsStore.loadCurrentMonthAppointments(period)
+            .then(({ status }) => {
+              if (status === 'OK') {
+                successCb(appointmentsStore.activeAppointments.map((appointment) => ({
+                      ...appointment,
+                      start: appointment.eventDate,
+                    })
+                ))
+              } else {
+                failureCb(status);
+              }
+            })
+            .catch((err) => failureCb(err));
+
+        },
+        showNonCurrentDates: false,
       },
       eventData: {},
       isModalActive: false,
     }
   },
 
-  async created() {
-    this.basicCalendarOptions.events = this.activeAppointments
-      .map((appointment) => {
-      const appointmentDate = new Date(appointment.eventDate);
-
-      return {
-        ...appointment,
-        date: `${appointmentDate.getFullYear()}-0${appointmentDate.getMonth()+1}-${appointmentDate.getDate()}`,
-      };
-    });
+  beforeUnmount() {
+    if (this.$refs.fullCalendar) {
+      this.$refs.fullCalendar.calendar.destroy();
+    }
   },
 
   computed: {
@@ -45,7 +60,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(useUserStore, ['refreshToken']),
+    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments', 'dropLoadedAppointments']),
 
     handleDateClick(arg) {
       // is it necessary???
@@ -54,7 +69,6 @@ export default {
       }
 
       this.eventData = arg;
-
       this.toggleModal();
     },
 
@@ -66,6 +80,7 @@ export default {
 </script>
 <template>
   <full-calendar
+    ref="fullCalendar"
     :options="basicCalendarOptions"
   >
     <template #eventContent="arg">

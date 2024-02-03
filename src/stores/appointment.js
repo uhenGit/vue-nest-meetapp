@@ -6,7 +6,6 @@ export const useAppointmentStore = defineStore(
 		state: () => ({
 			loadedAppointments: new Map(),
 			selectedPeriod: '',
-			loadError: null,
 		}),
 
 		getters: {
@@ -34,12 +33,18 @@ export const useAppointmentStore = defineStore(
 					});
 
 					if (!response.ok) {
-						this.loadError = response.error;
-						return;
+						return {
+							status: response.error || response.statusText,
+						};
 					}
 
 					const newAppointment = await response.json();
+					// @todo check it twice
 					this.injectAppointment(newAppointment);
+
+					return {
+						status: response.statusText,
+					}
 				} catch (err) {
 					throw new Error(`Create appointment error: ${JSON.stringify(err)}`);
 				}
@@ -48,12 +53,8 @@ export const useAppointmentStore = defineStore(
 			async loadCurrentMonthAppointments(period) {
 				this.setSelectedPeriod(period);
 
-				if (this.selectedPeriod in this.loadedAppointments) {
-					return;
-				}
-
 				try {
-					const url = `http://localhost:3001/appointments/load-appointments/${period.year}/${period.month}`
+					const url = `http://localhost:3001/appointments/load-appointments/${period.year}/${period.month}`;
 					const response = await fetch(url, {
 						method: 'GET',
 						credentials: 'include',
@@ -63,16 +64,24 @@ export const useAppointmentStore = defineStore(
 					});
 
 					if (!response.ok) {
-						this.loadError = response.error;
-						return;
+						return {
+							status: response.error || response.statusText,
+						};
 					}
 
-					const appointments = await response.json()
+					const appointments = await response.json();
 					this.loadedAppointments.set(this.selectedPeriod, appointments);
 					// load appointments each time when user adds a month to the 'loadedMonths' array
+					return {
+						status: response.statusText,
+					};
 				} catch (err) {
 					console.log('LOAD ERROR: ', err);
 				}
+			},
+
+			dropLoadedAppointments() {
+				this.loadedAppointments.clear();
 			},
 
 			setSelectedPeriod(period) {
@@ -83,7 +92,6 @@ export const useAppointmentStore = defineStore(
 				const currentPeriodAppointments = this.loadedAppointments.get(this.selectedPeriod);
 				currentPeriodAppointments.push(item);
 				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
-
 			},
 		},
 	}

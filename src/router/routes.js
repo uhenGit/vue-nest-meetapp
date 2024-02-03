@@ -2,7 +2,7 @@ export const routes = [
 	{
 		path: '/',
 		name: 'home',
-		component: () => import('@/pages/EventsList.vue'),
+		component: () => import('@/pages/CalendarView.vue'),
 	},
 	{
 		path: '/login',

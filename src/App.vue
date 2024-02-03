@@ -1,6 +1,6 @@
 <script>
 import { mapActions, mapState } from 'pinia';
-import { useUserStore } from '@/stores';
+import { useUserStore, useAppointmentStore } from '@/stores';
 import './index.css';
 
 export default {
@@ -12,13 +12,12 @@ export default {
 
   methods: {
     ...mapActions(useUserStore, ['logout']),
+    ...mapActions(useAppointmentStore, ['dropLoadedAppointments']),
 
     async onLogout() {
       await this.logout();
-
-      if (!this.isLoggedIn) {
-        this.$router.push({ name: 'login' });
-      }
+      this.dropLoadedAppointments()
+      this.$router.push({ name: 'login' });
     },
   },
 }
