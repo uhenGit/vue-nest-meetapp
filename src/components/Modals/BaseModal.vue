@@ -63,23 +63,24 @@ export default {
   methods: {
     ...mapActions(useAppointmentStore, ['addAppointment', 'loadCurrentMonthAppointments']),
 
-    onToggleModal() {
-      this.$emit('toggle-modal');
+    onToggleModal({ status }) {
+      this.$emit('toggle-modal', { status });
     },
 
     async onSubmit() {
       this.event.eventDate = new Date(`${this.scheduledDay}T${this.scheduledTime}`);
+      let response;
 
       // @todo add update appointment action; check actions errors and define an options
       // for toggle modal or error notification
       if (this.eventData._def?.publicId) {
         // await this.updateAppointment(this.event);
       } else {
-        await this.addAppointment(this.event);
+        response = await this.addAppointment(this.event);
       }
 
       this.$nextTick(() => {
-        this.onToggleModal();
+        this.onToggleModal(response);
       });
     },
   },

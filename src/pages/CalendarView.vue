@@ -20,16 +20,15 @@ export default {
         plugins: [dayGridPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
         dateClick: this.handleDateClick,
-        events: function(info, successCb, failureCb) {
+        events: (info, successCb, failureCb) => {
           const period = {
             year: info.start.getFullYear(),
             month: info.start.getMonth() + 1,
           };
-          const appointmentsStore = useAppointmentStore();
-          appointmentsStore.loadCurrentMonthAppointments(period)
+          this.loadCurrentMonthAppointments(period)
             .then(({ status }) => {
               if (status === 'OK') {
-                successCb(appointmentsStore.activeAppointments.map((appointment) => ({
+                successCb(this.activeAppointments.map((appointment) => ({
                       ...appointment,
                       start: appointment.eventDate,
                     })
@@ -60,7 +59,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments', 'dropLoadedAppointments']),
+    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments']),
 
     handleDateClick(arg) {
       // is it necessary???
@@ -69,6 +68,14 @@ export default {
       }
 
       this.eventData = arg;
+      this.toggleModal();
+    },
+
+    onToggleModal(evt) {
+      if (evt.status === 'Created') {
+        this.$refs.fullCalendar.calendar.refetchEvents();
+      }
+
       this.toggleModal();
     },
 
@@ -97,6 +104,6 @@ export default {
   <base-modal
     v-if="isModalActive"
     :event-data="eventData"
-    @toggle-modal="toggleModal"
+    @toggle-modal="onToggleModal"
   />
 </template>
