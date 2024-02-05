@@ -28,17 +28,17 @@ export default {
   },
 
   mounted() {
-    const propsAuthorId = this.eventData._def?.extendedProps?.authorId;
+    const propsAuthorId = this.eventData.extendedProps?.authorId;
     this.eventAuthor = propsAuthorId && propsAuthorId !== this.user.userId
         ? 'Another user' // @todo get author from DB by authorId
         : 'You';
 
     if (!this.eventData.dayEl) {
       this.event = {
-        ...this.eventData._def.extendedProps,
-        title: this.eventData._def.title,
+        ...this.eventData.extendedProps,
+        title: this.eventData.title,
       };
-      const selectedDate = this.eventData._def.extendedProps.eventDate;
+      const selectedDate = this.eventData.extendedProps.eventDate;
       this.scheduledDay = selectedDate.split('T')[0];
       this.scheduledTime = selectedDate.split('T')[1].split('.')[0];
     } else {
@@ -61,10 +61,21 @@ export default {
   },
 
   methods: {
-    ...mapActions(useAppointmentStore, ['addAppointment', 'loadCurrentMonthAppointments']),
+    ...mapActions(useAppointmentStore, [
+      'addAppointment',
+      'loadCurrentMonthAppointments',
+      'removeSelectedAppointment',
+    ]),
 
     onToggleModal({ status }) {
       this.$emit('toggle-modal', { status });
+    },
+
+    async onRemoveAppointment() {
+      const { status } = await this.removeSelectedAppointment(this.eventData.publicId);
+      this.$nextTick(() => {
+        this.onToggleModal(status);
+      })
     },
 
     async onSubmit() {
@@ -73,7 +84,7 @@ export default {
 
       // @todo add update appointment action; check actions errors and define an options
       // for toggle modal or error notification
-      if (this.eventData._def?.publicId) {
+      if (this.eventData.publicId) {
         // await this.updateAppointment(this.event);
       } else {
         response = await this.addAppointment(this.event);
@@ -96,7 +107,7 @@ export default {
       @click.stop
     >
       <button
-          class="absolute top-3 right-3 bg-gray-800 text-white rounded-md pb-0.5 px-1"
+          class="absolute top-3 right-3 bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
           @click.stop="onToggleModal"
       >
         close
@@ -187,12 +198,21 @@ export default {
           </tr>
         </tbody>
       </table>
-      <button
-          class="absolute bottom-3 right-3 bg-gray-800 text-white rounded-md pb-0.5 px-1"
-          @click.stop="onSubmit"
-      >
-        save
-      </button>
+      <div class="mt-10 w-full flex justify-around">
+        <button
+          v-if="eventData.publicId"
+          class="text-red-700 bg-white border rounded-md pl-3 pr-3 pb-0.5"
+          @click.stop="onRemoveAppointment"
+        >
+          delete
+        </button>
+        <button
+            class="bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
+            @click.stop="onSubmit"
+        >
+          save
+        </button>
+      </div>
     </div>
   </div>
 </template>

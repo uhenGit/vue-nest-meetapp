@@ -5,6 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useAppointmentStore, useUserStore } from '@/stores';
 import { mapActions, mapWritableState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
+import { isAuthor } from '@/utils/usersAppointment.js';
 
 export default {
   name: 'CalendarView',
@@ -27,7 +28,7 @@ export default {
           };
           this.loadCurrentMonthAppointments(period)
             .then(({ status }) => {
-              if (status === 'OK') {
+              if (status) {
                 successCb(this.activeAppointments.map((appointment) => ({
                       ...appointment,
                       start: appointment.eventDate,
@@ -59,7 +60,8 @@ export default {
   },
 
   methods: {
-    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments']),
+    isAuthor,
+    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments', 'removeSelectedAppointment']),
 
     handleDateClick(arg) {
       // is it necessary???
@@ -72,7 +74,7 @@ export default {
     },
 
     onToggleModal(evt) {
-      if (evt.status === 'Created') {
+      if (evt.status) {
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
 
@@ -81,6 +83,15 @@ export default {
 
     toggleModal() {
         this.isModalActive = !this.isModalActive;
+    },
+
+    async removeAppointment(appointmentId) {
+      const { id } = await this.removeSelectedAppointment(appointmentId);
+
+      // @todo handle else statement with the error notification
+      if (id === appointmentId) {
+        this.$refs.fullCalendar.calendar.refetchEvents();
+      }
     },
   },
 }
@@ -91,14 +102,21 @@ export default {
     :options="basicCalendarOptions"
   >
     <template #eventContent="arg">
-      <button
-        class="flex justify-start p-2 min-w-full bg-main-light hover:bg-main-dark text-white rounded-md"
-        @click="handleDateClick(arg.event)"
-      >
-        <span class="text-ellipsis overflow-hidden">
+      <div class="group flex justify-start p-2 min-w-full bg-main-light hover:bg-main-dark text-white rounded-md">
+        <button
+          class="text-ellipsis overflow-hidden w-full"
+          @click="handleDateClick(arg.event)"
+        >
           {{ arg.event.title }}
-        </span>
-      </button>
+        </button>
+        <button
+          v-if="isAuthor(arg.event.extendedProps.authorId)"
+          class="pt-0 pr-1 pb-0.5 pl-0.5 text-transparent group-hover:text-white bg-transparent group-hover:bg-red-700 rounded-full w-6 h-6"
+          @click="removeAppointment(arg.event.id)"
+        >
+          x
+        </button>
+      </div>
     </template>
   </full-calendar>
   <base-modal

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { AddAppointmentDto } from './appointments.dto';
 import { AppointmentItemType } from './types';
@@ -37,5 +45,16 @@ export class AppointmentController {
       year,
       month,
     });
+  }
+
+  @Delete('remove/:id')
+  async removeAppointmentById(
+    @Param('id') appointmentId: string,
+    @CookieUserDecorator('sub') userId: string,
+  ): Promise<AppointmentItemType> {
+    return this.appointmentService.removeAppointment(
+      appointmentId,
+      userId,
+    );
   }
 }

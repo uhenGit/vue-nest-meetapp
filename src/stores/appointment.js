@@ -11,7 +11,7 @@ export const useAppointmentStore = defineStore(
 		getters: {
 			activeAppointments: (state) => {
 				if (typeof state.loadedAppointments === 'undefined') {
-					return {};
+					return [];
 				}
 
 				return state.loadedAppointments.get(state.selectedPeriod);
@@ -71,12 +71,32 @@ export const useAppointmentStore = defineStore(
 
 					const appointments = await response.json();
 					this.loadedAppointments.set(this.selectedPeriod, appointments);
-					// load appointments each time when user adds a month to the 'loadedMonths' array
+
 					return {
-						status: response.statusText,
+						status: response.ok,
 					};
 				} catch (err) {
 					console.log('LOAD ERROR: ', err);
+				}
+			},
+
+			async removeSelectedAppointment(appointmentId) {
+				const url = `http://localhost:3001/appointments/remove/${appointmentId}`;
+				try {
+					const response = await fetch(url,{
+						method: 'DELETE',
+						credentials: 'include',
+						headers: {
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+						},
+					});
+
+					const { id } = await response.json();
+					this.pickAppointment(id);
+
+					return { id, status: response.ok };
+				} catch (err) {
+					console.log('REMOVE ERROR: ', err);
 				}
 			},
 
@@ -89,8 +109,12 @@ export const useAppointmentStore = defineStore(
 			},
 
 			injectAppointment(item) {
-				const currentPeriodAppointments = this.loadedAppointments.get(this.selectedPeriod);
-				currentPeriodAppointments.push(item);
+				const currentPeriodAppointments = this.activeAppointments.concat[item];
+				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
+			},
+
+			pickAppointment(appointmentId) {
+				const currentPeriodAppointments = this.activeAppointments.filter(({ id }) => id !== appointmentId);
 				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
 			},
 		},

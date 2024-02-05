@@ -43,6 +43,23 @@ export class AppointmentService {
     }
   }
 
+  // use delete().catch() scheme as the prisma does not handle 'not found' case in another way at the moment
+  async removeAppointment(
+    appointmentId: string,
+    userId: string,
+  ): Promise<AppointmentItemType> {
+    return this.prismaService.appointment
+      .delete({
+        where: {
+          id: appointmentId,
+          authorId: userId,
+        },
+      })
+      .catch(() => {
+        throw new NotFoundException('The appointment does not exist');
+      });
+  }
+
   private buildDateQuery(year: number, month: number): object {
     // month beginning
     const from = new Date(year, month - 1);
