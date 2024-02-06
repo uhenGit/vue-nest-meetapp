@@ -39,11 +39,10 @@ export const useAppointmentStore = defineStore(
 					}
 
 					const newAppointment = await response.json();
-					// @todo check it twice
 					this.injectAppointment(newAppointment);
 
 					return {
-						status: response.statusText,
+						status: response.ok,
 					}
 				} catch (err) {
 					throw new Error(`Create appointment error: ${JSON.stringify(err)}`);

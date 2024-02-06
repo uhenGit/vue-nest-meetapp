@@ -24,14 +24,13 @@ export class AppointmentController {
   @Post('add-appointment')
   async addAppointment(
     @Body() dto: AddAppointmentDto,
-    @CookieUserDecorator('email') email: string,
   ): Promise<AppointmentItemType> {
     const parsedBody = {
       ...dto,
       eventDate: new Date(dto.eventDate),
     };
 
-    return this.appointmentService.addAppointment(parsedBody, email);
+    return this.appointmentService.addAppointment(parsedBody);
   }
 
   @Get('load-appointments/:year/:month')
@@ -52,9 +51,6 @@ export class AppointmentController {
     @Param('id') appointmentId: string,
     @CookieUserDecorator('sub') userId: string,
   ): Promise<AppointmentItemType> {
-    return this.appointmentService.removeAppointment(
-      appointmentId,
-      userId,
-    );
+    return this.appointmentService.removeAppointment(appointmentId, userId);
   }
 }

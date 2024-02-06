@@ -25,7 +25,6 @@ export class AppointmentService {
 
   async addAppointment(
     dto: AddAppointmentDto,
-    userEmail: string,
   ): Promise<AppointmentItemType> {
     try {
       return this.prismaService.appointment.create({
@@ -33,7 +32,7 @@ export class AppointmentService {
           title: dto.title,
           authorId: dto.authorId,
           eventDate: dto.eventDate,
-          participants: [userEmail],
+          participants: dto.participants,
           cancelled: dto.cancelled,
           cancellations: [],
         },

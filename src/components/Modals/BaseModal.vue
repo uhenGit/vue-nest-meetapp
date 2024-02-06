@@ -1,6 +1,7 @@
 <script>
 import { mapActions, mapWritableState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
+import { isAuthor, isValidEmail } from '@/utils';
 
 export default {
   props: {
@@ -24,6 +25,9 @@ export default {
       },
       scheduledTime: null,
       scheduledDay: null,
+      isInvalidEmail: false,
+      isEmptyTitle: false,
+      participantEmail: '',
     };
   },
 
@@ -51,6 +55,10 @@ export default {
   computed: {
     ...mapWritableState(useUserStore, ['user']),
 
+    disable() {
+      return !isAuthor(this.event.authorId);
+    },
+
     isCancelledAppointment() {
       return this.event.cancelled ? 'Yes' : 'No';
     },
@@ -67,7 +75,33 @@ export default {
       'removeSelectedAppointment',
     ]),
 
+    addParticipant() {
+      this.isInvalidEmail = false;
+
+      if (isValidEmail(this.participantEmail) && !this.event.participants.includes(this.participantEmail)) {
+        this.event.participants.push(this.participantEmail);
+        this.participantEmail = '';
+      } else {
+        this.isInvalidEmail = true;
+      }
+    },
+
+    clearEmail() {
+      this.participantEmail = '';
+      this.isInvalidEmail = false;
+      this.$refs.participantEmail.focus();
+    },
+
     onToggleModal({ status }) {
+      this.event = {
+        title: '',
+        authorId: '',
+        cancelled: false,
+        participants: [],
+        cancellations: [],
+      };
+      this.scheduledTime = null;
+      this.scheduledDay = null;
       this.$emit('toggle-modal', { status });
     },
 
@@ -79,6 +113,11 @@ export default {
     },
 
     async onSubmit() {
+      if (!this.event.title) {
+        this.isEmptyTitle = true;
+        return;
+      }
+
       this.event.eventDate = new Date(`${this.scheduledDay}T${this.scheduledTime}`);
       let response;
 
@@ -124,7 +163,10 @@ export default {
             <td>
               <input
                 v-model="event.title"
-                class="rounded-md p-1"
+                :disabled="disable"
+                class="rounded-md p-1 w-full"
+                :class="{ 'border-red-700': isEmptyTitle }"
+                @input.once="isEmptyTitle = false"
               />
             </td>
           </tr>
@@ -133,8 +175,9 @@ export default {
             <td>
               <input
                 v-model="scheduledDay"
+                :disabled="disable"
                 type="date"
-                class="rounded-md p-1"
+                class="border-none cursor-pointer p-1"
               />
             </td>
           </tr>
@@ -142,10 +185,10 @@ export default {
             <td>Event time</td>
             <td>
               <input
-                ref="eventTime"
-                type="time"
                 v-model="scheduledTime"
-                class="rounded-md p-1"
+                :disabled="disable"
+                type="time"
+                class="border-none cursor-pointer p-1"
               />
             </td>
           </tr>
@@ -155,14 +198,40 @@ export default {
               <span>{{ eventAuthor }}</span>
             </td>
           </tr>
+          <tr
+            v-if="!disable"
+            class="leading-10 border-b-2"
+          >
+            <td class="pr-6">Add new participant email</td>
+            <td class="flex mt-2 relative">
+              <div class="flex flex-col w-full">
+                <input
+                  ref="participantEmail"
+                  v-model="participantEmail"
+                  class="rounded-md p-1 w-full"
+                  @keyup.enter="addParticipant"
+                  @input="isInvalidEmail = false"
+                />
+                <span class="text-xs">
+                  Hit the Enter key to add and validate emails
+                </span>
+              </div>
+              <span
+                v-if="isInvalidEmail"
+                class="absolute right-3 bottom-4 after:content-['x'] after:ml-1.5 after:text-red-700 after:cursor-pointer"
+                @click="clearEmail"
+              >
+              </span>
+            </td>
+          </tr>
           <tr class="leading-10 border-b-2">
             <td class="pr-6">Participants emails</td>
-            <td>
+            <td class="flex">
               <template
                 v-for="(participant, idx) in event.participants"
                 :key="idx"
               >
-                <span >
+                <span>
                   {{ participant }}
                 </span>
                 <span
@@ -171,6 +240,12 @@ export default {
                   ,&ensp;
                 </span>
               </template>
+              <span
+                v-if="isInvalidEmail"
+                class="text-red-700 text-sm font-bold mt-3 ml-3"
+              >
+                Invalid email
+              </span>
             </td>
           </tr>
           <tr class="leading-10 border-b-2">
