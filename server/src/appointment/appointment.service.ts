@@ -13,8 +13,23 @@ export class AppointmentService {
     try {
       return this.prismaService.appointment.findMany({
         where: {
-          authorId: dto.userId,
-          eventDate: this.buildDateQuery(dto.year, dto.month),
+          AND: [
+            {
+              OR: [
+                {
+                  authorId: dto.userId,
+                },
+                {
+                  participants: {
+                    has: dto.userEmail,
+                  },
+                },
+              ],
+            },
+            {
+              eventDate: this.buildDateQuery(dto.year, dto.month),
+            },
+          ],
         },
         include: {
           author: {

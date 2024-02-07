@@ -1,4 +1,5 @@
 interface GetAppointmentsDto {
+  userEmail: string;
   userId: string;
   year: number;
   month: number;

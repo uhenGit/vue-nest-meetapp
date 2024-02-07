@@ -38,8 +38,10 @@ export class AppointmentController {
     @ParamToNumberDecorator('month') month: number,
     @ParamToNumberDecorator('year') year: number,
     @CookieUserDecorator('sub') userId: string,
+    @CookieUserDecorator('email') userEmail: string,
   ): Promise<AppointmentItemType[]> {
     return this.appointmentService.getCurrentAppointments({
+      userEmail,
       userId,
       year,
       month,
