@@ -27,18 +27,18 @@ export default {
             month: info.start.getMonth() + 1,
           };
           this.loadCurrentMonthAppointments(period)
-            .then(({ status }) => {
-              if (status) {
+            .then((response) => {
+              if (response.status === 'Unauthorized' || !response.status) {
+                failureCb(response.status);
+              } else {
                 successCb(this.activeAppointments.map((appointment) => ({
                       ...appointment,
                       start: appointment.eventDate,
                     })
                 ))
-              } else {
-                failureCb(status);
               }
             })
-            .catch((err) => failureCb(err));
+            .catch(() => failureCb('Get appointments error')); // @todo implement better handler
 
         },
         showNonCurrentDates: false,

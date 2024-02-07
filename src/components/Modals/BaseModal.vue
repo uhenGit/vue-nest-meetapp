@@ -19,6 +19,7 @@ export default {
       event: {
         title: '',
         authorId: '',
+        authorEmail: '',
         cancelled: false,
         participants: [],
         cancellations: [],
@@ -32,15 +33,16 @@ export default {
   },
 
   mounted() {
-    const propsAuthorId = this.eventData.extendedProps?.authorId;
-    this.eventAuthor = propsAuthorId && propsAuthorId !== this.user.userId
-        ? 'Another user' // @todo get author from DB by authorId
+    const propsAuthorEmail = this.eventData.extendedProps?.author?.email;
+    this.eventAuthor = propsAuthorEmail && propsAuthorEmail !== this.user.userEmail
+        ? propsAuthorEmail
         : 'You';
 
     if (!this.eventData.dayEl) {
       this.event = {
         ...this.eventData.extendedProps,
         title: this.eventData.title,
+        authorEmail: propsAuthorEmail,
       };
       const selectedDate = this.eventData.extendedProps.eventDate;
       this.scheduledDay = selectedDate.split('T')[0];
@@ -49,6 +51,7 @@ export default {
       this.scheduledDay = this.eventData.dateStr;
       this.scheduledTime = '09:00:00';
       this.event.authorId = this.user.userId;
+      this.event.authorEmail = this.user.userEmail;
     }
   },
 
@@ -96,6 +99,7 @@ export default {
       this.event = {
         title: '',
         authorId: '',
+        authorEmail: '',
         cancelled: false,
         participants: [],
         cancellations: [],
