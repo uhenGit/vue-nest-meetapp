@@ -16,6 +16,13 @@ export class AppointmentService {
           authorId: dto.userId,
           eventDate: this.buildDateQuery(dto.year, dto.month),
         },
+        include: {
+          author: {
+            select: {
+              email: true,
+            },
+          },
+        },
       });
     } catch (err) {
       // @todo add logger or bugsnag with error handler
@@ -23,9 +30,7 @@ export class AppointmentService {
     }
   }
 
-  async addAppointment(
-    dto: AddAppointmentDto,
-  ): Promise<AppointmentItemType> {
+  async addAppointment(dto: AddAppointmentDto): Promise<AppointmentItemType> {
     try {
       return this.prismaService.appointment.create({
         data: {
