@@ -110,7 +110,7 @@ export default {
     },
 
     async onRemoveAppointment() {
-      const { status } = await this.removeSelectedAppointment(this.eventData.publicId);
+      const { status } = await this.removeSelectedAppointment(this.eventData.id);
       this.$nextTick(() => {
         this.onToggleModal(status);
       })
@@ -127,7 +127,7 @@ export default {
 
       // @todo add update appointment action; check actions errors and define an options
       // for toggle modal or error notification
-      if (this.eventData.publicId) {
+      if (this.eventData.id) {
         // await this.updateAppointment(this.event);
       } else {
         response = await this.addAppointment(this.event);
@@ -279,15 +279,16 @@ export default {
       </table>
       <div class="mt-10 w-full flex justify-around">
         <button
-          v-if="eventData.publicId"
+          v-if="eventData.id && !disable"
           class="text-red-700 bg-white border rounded-md pl-3 pr-3 pb-0.5"
           @click.stop="onRemoveAppointment"
         >
           delete
         </button>
         <button
-            class="bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
-            @click.stop="onSubmit"
+          v-if="!disable"
+          class="bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
+          @click.stop="onSubmit"
         >
           save
         </button>
