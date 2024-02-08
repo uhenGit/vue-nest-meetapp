@@ -18,24 +18,6 @@ export default {
   },
 
   data() {
-    /* this.menuItems = [
-      {
-        name: 'Delete appointment',
-        action: this.removeAppointment,
-        disable: () => {
-          const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
-          return isAuthor(authorId);
-        },
-      },
-      {
-        name: 'Cancel appointment',
-        action: this.cancelAppointment,
-        disable: () => {
-          const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
-          return isAuthor(authorId);
-        },
-      },
-    ]; */
     return {
       basicCalendarOptions: {
         plugins: [dayGridPlugin, interactionPlugin],
@@ -88,21 +70,35 @@ export default {
       return [
         {
           name: 'Delete appointment',
-          action: this.removeAppointment,
-          disable: () => {
-            const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
-            return isAuthor(authorId);
-          },
+          disable: this.disabled,
+          action: this.disabled ? null : this.removeAppointment,
         },
         {
           name: 'Cancel appointment',
-          action: this.cancelAppointment,
-          disable: () => {
-            const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
-            return isAuthor(authorId);
-          },
+          disable: this.disabled,
+          action: this.disabled ? null : this.cancelAppointment,
+        },
+        {
+          name: 'View/edit details',
+          action: () => {
+            const selectedAppointment = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
+            this.handleDateClick({
+              extendedProps: { ...selectedAppointment },
+              title: selectedAppointment.title,
+              id: selectedAppointment.id,
+            });
+          }
         },
       ];
+    },
+
+    disabled() {
+      if (!this.selectedAppointmentId || !this.activeAppointments) {
+        return false;
+      }
+
+      const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
+      return !isAuthor(authorId);
     },
   },
 
@@ -116,12 +112,10 @@ export default {
       }
 
       this.eventData = arg;
-      console.log('CLICK: ', this.eventData);
       this.toggleModal();
     },
 
     onToggleModal(evt) {
-      console.log('TOGGLE: ', evt);
       if (evt.status) {
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
@@ -134,7 +128,6 @@ export default {
     },
 
     async removeAppointment() {
-      console.log('REMOVE: ', this.selectedAppointmentId);
       const { id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
 
       // @todo handle else statement with the error notification
@@ -149,16 +142,28 @@ export default {
     },
 
     onShowMenu(evt, itemId) {
-      if (this.isShowMenu && !itemId) {
+      if (this.isShowMenu) {
         this.selectedAppointmentId = null;
         this.menuCoords = {};
       } else {
+        this.menuCoords= this.setCoords(evt);
         this.selectedAppointmentId = itemId;
-        this.menuCoords = { x: evt.x, y: evt.y };
       }
-      console.log('Menu: ', this.menuCoords, this.selectedAppointmentId);
 
       this.isShowMenu = !this.isShowMenu;
+    },
+
+    setCoords(event) {
+      const coords = { x: event.x, y: event.y };
+      const documentWidth = document.documentElement.clientWidth;
+      // const documentHeight = document.documentElement.clientHeight;
+      if ((event.x + 200) > documentWidth) {
+        coords.x = event.x - (200 - (documentWidth - event.x));
+      }
+      /* if ((event.y + 150) > documentHeight) {
+        coords.y = event.y - (150 - (documentHeight - event.y));
+      } */
+      return coords;
     },
   },
 }
@@ -169,18 +174,25 @@ export default {
     :options="basicCalendarOptions"
   >
     <template #eventContent="arg">
-      <div class="group flex justify-start p-2 min-w-full bg-main-light hover:bg-main-dark text-white rounded-md">
+      <div class="group flex justify-start pr-2 min-w-full bg-main-light text-white rounded-md">
         <button
-          class="text-ellipsis overflow-hidden w-full"
+          class="text-ellipsis overflow-hidden w-full group-hover:bg-main-dark rounded-l-md"
           @click="handleDateClick(arg.event)"
         >
           {{ arg.event.title }}
         </button>
         <button
-          class="bg-white group-hover:bg-gray-300 text-gray-950 rounded-full w-6 h-6"
+          class="bg-white my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4"
           @click.stop="onShowMenu($event, arg.event.id)"
         >
-          ...
+          <svg
+            viewBox="0 0 16 16"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="#3d3846"
+            class="w-4 h-4"
+          >
+            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+          </svg>
         </button>
       </div>
     </template>
@@ -193,7 +205,7 @@ export default {
   <context-menu
       v-if="isShowMenu"
       :coords="menuCoords"
-      @hide-menu="onShowMenu"
+      @blur="onShowMenu"
   >
     <template #menu-name>
       <p class="text-white text-md mb-2 px-3">Appointment's actions</p>
@@ -203,8 +215,8 @@ export default {
         <li
             v-for="(item, idx) in menuItems"
             :key="idx"
-            class="hover:bg-gray-700 cursor-pointer px-3 py-2 text-white text-sm rounded-b-md"
-            :class="{ 'text-gray-500': item.disable }"
+            class="hover:bg-gray-700 px-3 py-2 text-sm rounded-b-md"
+            :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
             @click="item.action"
         >
           {{ item.name }}

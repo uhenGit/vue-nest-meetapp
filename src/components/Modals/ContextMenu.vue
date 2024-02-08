@@ -10,21 +10,12 @@ export default {
       }),
     }
   },
-  emits: ['hide-menu'],
-  methods: {
-    hideMenu() {
-      console.log('HIDE')
-      this.$emit('hide-menu');
-    },
-  },
 }
 </script>
 <template>
   <div
     class="absolute w-1/5 z-10 bg-gray-800 rounded-md pt-3"
     :style="{ top: `${coords.y}px`, left: `${coords.x}px` }"
-    tabindex="0"
-    @blur="hideMenu"
   >
     <slot name="menu-name"/>
     <hr />
