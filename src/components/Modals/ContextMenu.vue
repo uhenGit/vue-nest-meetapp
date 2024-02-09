@@ -2,20 +2,38 @@
 export default {
   name: 'ContextMenu',
   props: {
-    coords: {
+    menuPosition: {
       type: Object,
-      default: () => ({
-        x: 0,
-        y: 0,
-      }),
+      default: () => ({}),
     }
+  },
+
+  emits: ['hide-menu'],
+
+  mounted() {
+    document.addEventListener('mousedown', this.handleClickOutside);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside);
+  },
+
+  methods: {
+    handleClickOutside(evt) {
+      if (['menu', 'menuitem', 'menubar'].includes(evt.target.role)) {
+        return;
+      }
+
+      this.$emit('hide-menu');
+    },
   },
 }
 </script>
 <template>
   <div
     class="absolute w-1/5 z-10 bg-gray-800 rounded-md pt-3"
-    :style="{ top: `${coords.y}px`, left: `${coords.x}px` }"
+    :style="menuPosition"
+    role="menu"
   >
     <slot name="menu-name"/>
     <hr />

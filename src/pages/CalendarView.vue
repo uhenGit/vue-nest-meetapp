@@ -48,7 +48,7 @@ export default {
       eventData: {},
       isModalActive: false,
       isShowMenu: false,
-      menuCoords: {},
+      menuPosition: {},
       selectedAppointmentId: null,
     }
   },
@@ -132,7 +132,7 @@ export default {
 
       // @todo handle else statement with the error notification
       if (id === this.selectedAppointmentId) {
-        this.onShowMenu();
+        this.hideMenu();
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
     },
@@ -141,28 +141,33 @@ export default {
       console.log('CANCEL: ', this.selectedAppointmentId);
     },
 
-    onShowMenu(evt, itemId) {
-      if (this.isShowMenu) {
-        this.selectedAppointmentId = null;
-        this.menuCoords = {};
-      } else {
-        this.menuCoords= this.setCoords(evt);
-        this.selectedAppointmentId = itemId;
-      }
-
-      this.isShowMenu = !this.isShowMenu;
+    showMenu(evt, itemId) {
+      this.menuPosition = this.setPosition(evt);
+      this.selectedAppointmentId = itemId;
+      this.isShowMenu = true;
     },
 
-    setCoords(event) {
-      const coords = { x: event.x, y: event.y };
+    hideMenu() {
+      this.selectedAppointmentId = null;
+      this.menuPosition = {
+        maxHeight: null,
+      };
+      this.isShowMenu = false;
+    },
+
+    setPosition(event) {
+      const coords = {
+        left: `${event.x}px`,
+        top: `${event.y}px`,
+      };
       const documentWidth = document.documentElement.clientWidth;
-      // const documentHeight = document.documentElement.clientHeight;
+      const documentHeight = document.documentElement.clientHeight;
       if ((event.x + 200) > documentWidth) {
-        coords.x = event.x - (200 - (documentWidth - event.x));
+        coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
       }
-      /* if ((event.y + 150) > documentHeight) {
-        coords.y = event.y - (150 - (documentHeight - event.y));
-      } */
+      if ((event.y + 150) > documentHeight) {
+        coords.maxHeight = '150px';
+      }
       return coords;
     },
   },
@@ -183,7 +188,7 @@ export default {
         </button>
         <button
           class="bg-white my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4"
-          @click.stop="onShowMenu($event, arg.event.id)"
+          @click.stop="showMenu($event, arg.event.id)"
         >
           <svg
             viewBox="0 0 16 16"
@@ -204,11 +209,16 @@ export default {
   />
   <context-menu
       v-if="isShowMenu"
-      :coords="menuCoords"
-      @blur="onShowMenu"
+      :menu-position="menuPosition"
+      @hide-menu="hideMenu"
   >
     <template #menu-name>
-      <p class="text-white text-md mb-2 px-3">Appointment's actions</p>
+      <p
+        class="text-white text-md mb-2 px-3"
+        role="menubar"
+      >
+        Appointment's actions
+      </p>
     </template>
     <template #menu-list>
       <ul>
@@ -217,6 +227,7 @@ export default {
             :key="idx"
             class="hover:bg-gray-700 px-3 py-2 text-sm rounded-b-md"
             :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
+            role="menuitem"
             @click="item.action"
         >
           {{ item.name }}
