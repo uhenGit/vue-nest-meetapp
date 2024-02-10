@@ -99,6 +99,26 @@ export const useAppointmentStore = defineStore(
 				}
 			},
 
+			async updateAppointment(changes) {
+				const url = 'http://localhost:3001/appointments/update-one';
+				try {
+					const response = await fetch(url, {
+						method: 'PUT',
+						credentials: 'include',
+						headers: {
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+						},
+						body: JSON.stringify(changes),
+					});
+					console.log('UPDATE response: ', response);
+					const updatedAppointment = await response.json();
+					console.log('UPDATE result: ', updatedAppointment);
+					// @todo inject updated appointment
+				} catch (err) {
+					console.error('UPDATE ERROR: ', err);
+				}
+			},
+
 			dropLoadedAppointments() {
 				this.loadedAppointments.clear();
 			},

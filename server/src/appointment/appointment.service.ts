@@ -79,6 +79,30 @@ export class AppointmentService {
       });
   }
 
+  async updateAppointment(
+    changes: AddAppointmentDto,
+    authorId: string,
+  ): Promise<AppointmentItemType> {
+    const { id } = changes;
+    delete changes.id;
+    delete changes.authorId;
+    // @todo check what if 'changes' contains extra fields (remove author object on a client side)
+    // @todo return updated appointment with the author object included
+    try {
+      return this.prismaService.appointment.update({
+        where: {
+          id,
+          authorId,
+        },
+        data: {
+          ...changes,
+        },
+      });
+    } catch (err) {
+      throw new NotFoundException('The appointments does not exist');
+    }
+  }
+
   private buildDateQuery(year: number, month: number): object {
     // month beginning
     const from = new Date(year, month - 1);

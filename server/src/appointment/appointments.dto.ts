@@ -6,6 +6,7 @@ interface GetAppointmentsDto {
 }
 
 interface AddAppointmentDto {
+  id?: string;
   title: string;
   authorId: string;
   eventDate: Date;

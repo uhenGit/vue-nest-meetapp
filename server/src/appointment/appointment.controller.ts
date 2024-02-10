@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Param,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
@@ -54,5 +55,13 @@ export class AppointmentController {
     @CookieUserDecorator('sub') userId: string,
   ): Promise<AppointmentItemType> {
     return this.appointmentService.removeAppointment(appointmentId, userId);
+  }
+
+  @Put('update-one')
+  async updateAppointmentById(
+    @Body() dto: AddAppointmentDto,
+    @CookieUserDecorator('sub') userId: string,
+  ): Promise<AppointmentItemType> {
+    return this.appointmentService.updateAppointment(dto, userId);
   }
 }
