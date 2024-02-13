@@ -43,6 +43,7 @@ export default {
         ...this.eventData.extendedProps,
         title: this.eventData.title,
         authorEmail: propsAuthorEmail,
+        id: this.eventData.id,
       };
       const selectedDate = this.eventData.extendedProps.eventDate;
       this.scheduledDay = selectedDate.split('T')[0];
@@ -69,6 +70,16 @@ export default {
     isPartlyCancelledAppointment() {
       return this.event.cancellations.length > 0;
     },
+
+    hasNoChanges() {
+      const propEventDataClone = {
+        ...this.eventData?.extendedProps,
+        title: this.eventData.title,
+        authorEmail: this.event.authorEmail,
+      };
+
+      return JSON.stringify(propEventDataClone) === JSON.stringify(this.event);
+    },
   },
 
   methods: {
@@ -76,6 +87,7 @@ export default {
       'addAppointment',
       'loadCurrentMonthAppointments',
       'removeSelectedAppointment',
+      'updateAppointment',
     ]),
 
     addParticipant() {
@@ -128,7 +140,7 @@ export default {
       // @todo add update appointment action; check actions errors and define an options
       // for toggle modal or error notification
       if (this.eventData.id) {
-        // await this.updateAppointment(this.event);
+        response = await this.updateAppointment(this.event);
       } else {
         response = await this.addAppointment(this.event);
       }
@@ -288,6 +300,8 @@ export default {
         <button
           v-if="!disable"
           class="bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
+          :class="{ ['bg-gray-400 cursor-not-allowed']: hasNoChanges }"
+          :disabled="hasNoChanges"
           @click.stop="onSubmit"
         >
           save

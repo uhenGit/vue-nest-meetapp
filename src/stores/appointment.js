@@ -38,8 +38,9 @@ export const useAppointmentStore = defineStore(
 						};
 					}
 
-					const newAppointment = await response.json();
-					this.injectAppointment(newAppointment);
+					// @todo check when we need to inject/pick changes (sometimes calendar handled it under the hood)
+					// const newAppointment = await response.json();
+					// this.injectAppointment(newAppointment);
 
 					return {
 						status: response.ok,
@@ -102,18 +103,20 @@ export const useAppointmentStore = defineStore(
 			async updateAppointment(changes) {
 				const url = 'http://localhost:3001/appointments/update-one';
 				try {
+					delete changes.author;
+					delete changes.authorEmail;
 					const response = await fetch(url, {
 						method: 'PUT',
-						credentials: 'include',
 						headers: {
 							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+							'Content-Type': 'application/json',
 						},
+						credentials: 'include',
 						body: JSON.stringify(changes),
 					});
-					console.log('UPDATE response: ', response);
-					const updatedAppointment = await response.json();
-					console.log('UPDATE result: ', updatedAppointment);
-					// @todo inject updated appointment
+
+					// @todo inject updated appointment - is it necessary???
+					return { status: response.ok };
 				} catch (err) {
 					console.error('UPDATE ERROR: ', err);
 				}
