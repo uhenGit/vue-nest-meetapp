@@ -106,8 +106,8 @@ export default {
     ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments', 'removeSelectedAppointment']),
 
     handleDateClick(arg) {
-      // is it necessary???
-      if (!this.user) {
+      if (this.isShowMenu) {
+        this.hideMenu();
         return;
       }
 
@@ -182,12 +182,13 @@ export default {
       <div class="group flex justify-start pr-2 min-w-full bg-main-light text-white rounded-md">
         <button
           class="text-ellipsis overflow-hidden w-full group-hover:bg-main-dark rounded-l-md"
+          role="switch"
           @click="handleDateClick(arg.event)"
         >
           {{ arg.event.title }}
         </button>
         <button
-          class="bg-white my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4"
+          class="bg-white my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4 relative"
           @click.stop="showMenu($event, arg.event.id)"
         >
           <svg
