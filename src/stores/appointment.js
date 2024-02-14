@@ -22,7 +22,7 @@ export const useAppointmentStore = defineStore(
 		actions: {
 			async addAppointment(appointment) {
 				try {
-					const response = await fetch('http://localhost:3001/appointments/add-appointment', {
+					const { ok, error, statusText } = await fetch('http://localhost:3001/appointments/add-appointment', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
@@ -32,19 +32,7 @@ export const useAppointmentStore = defineStore(
 						body: JSON.stringify(appointment),
 					});
 
-					if (!response.ok) {
-						return {
-							status: response.error || response.statusText,
-						};
-					}
-
-					// @todo check when we need to inject/pick changes (sometimes calendar handled it under the hood)
-					// const newAppointment = await response.json();
-					// this.injectAppointment(newAppointment);
-
-					return {
-						status: response.ok,
-					}
+					return ok ? { status: ok } : { status: error || statusText };
 				} catch (err) {
 					throw new Error(`Create appointment error: ${JSON.stringify(err)}`);
 				}
@@ -90,11 +78,9 @@ export const useAppointmentStore = defineStore(
 							'Authorization': `Bearer ${localStorage.getItem('access_token')}`
 						},
 					});
-
 					const { id } = await response.json();
-					this.pickAppointment(id);
 
-					return { id, status: response.ok };
+					return { id, status: 'removed' };
 				} catch (err) {
 					console.log('REMOVE ERROR: ', err);
 				}
@@ -103,6 +89,7 @@ export const useAppointmentStore = defineStore(
 			async updateAppointment(changes) {
 				const url = 'http://localhost:3001/appointments/update-one';
 				try {
+					console.log('update: ', changes);
 					delete changes.author;
 					delete changes.authorEmail;
 					const response = await fetch(url, {
@@ -115,10 +102,27 @@ export const useAppointmentStore = defineStore(
 						body: JSON.stringify(changes),
 					});
 
-					// @todo inject updated appointment - is it necessary???
+					// @todo check status usage here
 					return { status: response.ok };
 				} catch (err) {
 					console.error('UPDATE ERROR: ', err);
+				}
+			},
+
+			async handleCancellation(appointmentId) {
+				const url = `http://localhost:3001/appointments/toggle-cancel/${appointmentId}`;
+				try {
+					const { ok, error, statusText } = await fetch(url, {
+						method: 'PATCH',
+						headers: {
+							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+						},
+						credentials: 'include',
+					});
+
+					return ok ? { status: 'updated' } : {  status: error || statusText };
+				} catch (err) {
+					console.log('CANCELLATION ERROR: ', err);
 				}
 			},
 
@@ -128,16 +132,6 @@ export const useAppointmentStore = defineStore(
 
 			setSelectedPeriod(period) {
 				this.selectedPeriod = `${period.month}/${period.year}`;
-			},
-
-			injectAppointment(item) {
-				const currentPeriodAppointments = this.activeAppointments.concat[item];
-				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
-			},
-
-			pickAppointment(appointmentId) {
-				const currentPeriodAppointments = this.activeAppointments.filter(({ id }) => id !== appointmentId);
-				this.loadedAppointments.set(this.selectedPeriod, currentPeriodAppointments);
 			},
 		},
 	}

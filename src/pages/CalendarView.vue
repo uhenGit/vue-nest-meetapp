@@ -76,7 +76,7 @@ export default {
         {
           name: 'Cancel appointment',
           disable: this.disabled,
-          action: this.disabled ? null : this.cancelAppointment,
+          action: this.disabled ? null : this.toggleUsersCancellation,
         },
         {
           name: 'View/edit details',
@@ -103,7 +103,11 @@ export default {
   },
 
   methods: {
-    ...mapActions(useAppointmentStore, ['loadCurrentMonthAppointments', 'removeSelectedAppointment']),
+    ...mapActions(useAppointmentStore, [
+      'loadCurrentMonthAppointments',
+      'removeSelectedAppointment',
+      'handleCancellation',
+    ]),
 
     handleDateClick(arg) {
       if (this.isShowMenu) {
@@ -112,6 +116,7 @@ export default {
       }
 
       this.eventData = arg;
+      this.selectedAppointmentId = arg.id;
       this.toggleModal();
     },
 
@@ -129,16 +134,27 @@ export default {
 
     async removeAppointment() {
       const { id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
+      this.hideMenu();
+      this.isModalActive = false;
+      this.selectedAppointmentId = null;
 
       // @todo handle else statement with the error notification
       if (id === this.selectedAppointmentId) {
-        this.hideMenu();
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
     },
 
-    async cancelAppointment() {
-      console.log('CANCEL: ', this.selectedAppointmentId);
+    async toggleUsersCancellation() {
+      const { status } = await this.handleCancellation(this.selectedAppointmentId);
+      console.log('CANCEL: ', status, this.selectedAppointmentId);
+      this.hideMenu();
+      this.isModalActive = false;
+      this.selectedAppointmentId = null;
+
+      if (status === 'updated') {
+        this.$refs.fullCalendar.calendar.refetchEvents();
+      }
+
     },
 
     showMenu(evt, itemId) {
@@ -181,14 +197,14 @@ export default {
     <template #eventContent="arg">
       <div class="group flex justify-start pr-2 min-w-full bg-main-light text-white rounded-md">
         <button
-          class="text-ellipsis overflow-hidden w-full group-hover:bg-main-dark rounded-l-md"
+          class="text-ellipsis pl-1.5 overflow-hidden w-full group-hover:bg-main-dark rounded-l-md"
           role="switch"
           @click="handleDateClick(arg.event)"
         >
           {{ arg.event.title }}
         </button>
         <button
-          class="bg-white my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4 relative"
+          class="bg-white ml-2 my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4 relative"
           @click.stop="showMenu($event, arg.event.id)"
         >
           <svg
@@ -207,6 +223,7 @@ export default {
     v-if="isModalActive"
     :event-data="eventData"
     @toggle-modal="onToggleModal"
+    @remove-appointment="removeAppointment"
   />
   <context-menu
       v-if="isShowMenu"

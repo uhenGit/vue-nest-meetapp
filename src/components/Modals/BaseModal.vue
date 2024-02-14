@@ -11,7 +11,7 @@ export default {
     },
   },
 
-  emits: ['toggle-modal'],
+  emits: ['toggle-modal', 'remove-appointment'],
 
   data() {
     return {
@@ -85,7 +85,6 @@ export default {
   methods: {
     ...mapActions(useAppointmentStore, [
       'addAppointment',
-      'loadCurrentMonthAppointments',
       'removeSelectedAppointment',
       'updateAppointment',
     ]),
@@ -108,6 +107,10 @@ export default {
     },
 
     onToggleModal({ status }) {
+      this.$emit('toggle-modal', { status });
+    },
+
+    onRemoveAppointment() {
       this.event = {
         title: '',
         authorId: '',
@@ -118,14 +121,7 @@ export default {
       };
       this.scheduledTime = null;
       this.scheduledDay = null;
-      this.$emit('toggle-modal', { status });
-    },
-
-    async onRemoveAppointment() {
-      const { status } = await this.removeSelectedAppointment(this.eventData.id);
-      this.$nextTick(() => {
-        this.onToggleModal(status);
-      })
+      this.$emit('remove-appointment');
     },
 
     async onSubmit() {
