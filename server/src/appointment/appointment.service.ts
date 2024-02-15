@@ -45,6 +45,20 @@ export class AppointmentService {
     }
   }
 
+  async getAppointmentById(
+    appointmentId: string,
+  ): Promise<AppointmentItemType> {
+    try {
+      return this.prismaService.appointment.findUnique({
+        where: {
+          id: appointmentId,
+        },
+      });
+    } catch (err) {
+      throw new NotFoundException('Appointment does not exist');
+    }
+  }
+
   async addAppointment(dto: AddAppointmentDto): Promise<AppointmentItemType> {
     try {
       return this.prismaService.appointment.create({
@@ -100,6 +114,26 @@ export class AppointmentService {
       });
     } catch (err) {
       throw new NotFoundException('The appointments does not exist');
+    }
+  }
+
+  async updateUsersCancellations(
+    emails: string[],
+    appointmentId: string,
+  ): Promise<boolean> {
+    try {
+      await this.prismaService.appointment.update({
+        where: {
+          id: appointmentId,
+        },
+        data: {
+          cancellations: emails,
+        },
+      });
+
+      return true;
+    } catch (err) {
+      throw new Error(err);
     }
   }
 

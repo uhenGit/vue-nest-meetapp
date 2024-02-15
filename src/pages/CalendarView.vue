@@ -146,15 +146,16 @@ export default {
 
     async toggleUsersCancellation() {
       const { status } = await this.handleCancellation(this.selectedAppointmentId);
-      console.log('CANCEL: ', status, this.selectedAppointmentId);
       this.hideMenu();
-      this.isModalActive = false;
-      this.selectedAppointmentId = null;
+      // this.isModalActive = false;
 
       if (status === 'updated') {
         this.$refs.fullCalendar.calendar.refetchEvents();
+        // @todo update eventData after updating the appointment
+        console.log('UPDATED: ', this.eventData)
+        this.selectedAppointmentId = null;
       }
-
+      // @todo handle server errors, when status is not equal to 'updated'
     },
 
     showMenu(evt, itemId) {
@@ -223,6 +224,7 @@ export default {
     v-if="isModalActive"
     :event-data="eventData"
     @toggle-modal="onToggleModal"
+    @toggle-cancellation="toggleUsersCancellation"
     @remove-appointment="removeAppointment"
   />
   <context-menu

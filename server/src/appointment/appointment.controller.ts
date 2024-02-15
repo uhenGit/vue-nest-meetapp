@@ -3,8 +3,9 @@ import {
   Controller,
   Delete,
   Get,
-  Post,
   Param,
+  Patch,
+  Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -62,6 +63,35 @@ export class AppointmentController {
     @Body() dto: AddAppointmentDto,
     @CookieUserDecorator('sub') userId: string,
   ): Promise<AppointmentItemType> {
+    // @todo return only status as we do not need all the item
     return this.appointmentService.updateAppointment(dto, userId);
+  }
+
+  @Patch('toggle-cancel/:id')
+  async toggleCancellation(
+    @Param('id') appointmentId: string,
+    @CookieUserDecorator('email') email: string,
+  ): Promise<boolean> {
+    try {
+      const { cancellations } =
+        await this.appointmentService.getAppointmentById(appointmentId);
+      const updatedUsersCancellations = this.updateUsers(cancellations, email);
+      await this.appointmentService.updateUsersCancellations(
+        updatedUsersCancellations,
+        appointmentId,
+      );
+
+      return true;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }
+
+  private updateUsers(users: string[], currentUserEmail: string) {
+    if (users.includes(currentUserEmail)) {
+      return users.filter((user: string) => user !== currentUserEmail);
+    }
+
+    return users.concat([currentUserEmail]);
   }
 }

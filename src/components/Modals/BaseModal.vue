@@ -11,7 +11,7 @@ export default {
     },
   },
 
-  emits: ['toggle-modal', 'remove-appointment'],
+  emits: ['toggle-modal', 'remove-appointment', 'toggle-cancellation'],
 
   data() {
     return {
@@ -69,6 +69,12 @@ export default {
 
     isPartlyCancelledAppointment() {
       return this.event.cancellations.length > 0;
+    },
+
+    cancelBtn() {
+      return this.event.cancellations.includes(this.user.userEmail)
+        ? 'undo cancel'
+        : 'cancel';
     },
 
     hasNoChanges() {
@@ -133,7 +139,7 @@ export default {
       this.event.eventDate = new Date(`${this.scheduledDay}T${this.scheduledTime}`);
       let response;
 
-      // @todo add update appointment action; check actions errors and define an options
+      // @todo check actions errors and define an options
       // for toggle modal or error notification
       if (this.eventData.id) {
         response = await this.updateAppointment(this.event);
@@ -154,7 +160,7 @@ export default {
     @click.stop="onToggleModal"
   >
     <div
-      class="relative p-12 self-start bg-white mt-20 min-w-full max-w-screen-md rounded-md z-30"
+      class="relative p-12 self-start bg-white my-auto min-w-full max-w-screen-md rounded-md z-30"
       @click.stop
     >
       <button
@@ -285,17 +291,26 @@ export default {
           </tr>
         </tbody>
       </table>
-      <div class="mt-10 w-full flex justify-around">
-        <button
-          v-if="eventData.id && !disable"
-          class="text-red-700 bg-white border rounded-md pl-3 pr-3 pb-0.5"
-          @click.stop="onRemoveAppointment"
-        >
-          delete
-        </button>
+      <div class="mt-10 w-full flex space-x-52">
+        <div>
+          <button
+            v-if="eventData.id && !disable"
+            class="text-red-800 bg-white hover:bg-red-800 hover:text-white border rounded-md px-20 pb-0.5 mr-2"
+            @click.stop="onRemoveAppointment"
+          >
+            delete
+          </button>
+<!--          handle button content depends on existing cancellations-->
+          <button
+            class="text-orange-400 bg-white hover:bg-orange-400 hover:text-white border rounded-md px-20 pb-0.5"
+            @click.stop="$emit('toggle-cancellation')"
+          >
+            {{ cancelBtn }}
+          </button>
+        </div>
         <button
           v-if="!disable"
-          class="bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
+          class="bg-gray-800 text-white rounded-md px-20 pb-0.5"
           :class="{ ['bg-gray-400 cursor-not-allowed']: hasNoChanges }"
           :disabled="hasNoChanges"
           @click.stop="onSubmit"
