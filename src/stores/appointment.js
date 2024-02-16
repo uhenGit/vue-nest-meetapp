@@ -89,7 +89,6 @@ export const useAppointmentStore = defineStore(
 			async updateAppointment(changes) {
 				const url = 'http://localhost:3001/appointments/update-one';
 				try {
-					console.log('update: ', changes);
 					delete changes.author;
 					delete changes.authorEmail;
 					const response = await fetch(url, {
@@ -112,15 +111,18 @@ export const useAppointmentStore = defineStore(
 			async handleCancellation(appointmentId) {
 				const url = `http://localhost:3001/appointments/toggle-cancel/${appointmentId}`;
 				try {
-					const { ok, error, statusText } = await fetch(url, {
+					const response = await fetch(url, {
 						method: 'PATCH',
 						headers: {
 							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
 						},
 						credentials: 'include',
 					});
+					console.log('action response: ', response);
+					const result = await response.json();
+					console.log('action result: ', result);
 
-					return ok ? { status: 'updated' } : {  status: error || statusText };
+					return result.status ? { status: 'updated' } : {  status: response.error || response.statusText };
 				} catch (err) {
 					console.log('CANCELLATION ERROR: ', err);
 				}

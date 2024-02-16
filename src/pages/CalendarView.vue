@@ -45,7 +45,7 @@ export default {
         },
         showNonCurrentDates: false,
       },
-      eventData: {},
+      eventDay: null,
       isModalActive: false,
       isShowMenu: false,
       menuPosition: {},
@@ -58,7 +58,6 @@ export default {
       this.$refs.fullCalendar.calendar.destroy();
     }
 
-    this.eventData = {};
     this.selectedAppointmentId = null;
   },
 
@@ -97,8 +96,16 @@ export default {
         return false;
       }
 
-      const { authorId } = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
+      const { authorId } = this.eventData;
       return !isAuthor(authorId);
+    },
+
+    eventData() {
+      if (!this.selectedAppointmentId) {
+        return {};
+      }
+
+      return this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
     },
   },
 
@@ -115,7 +122,7 @@ export default {
         return;
       }
 
-      this.eventData = arg;
+      this.eventDay = arg.dateStr || null;
       this.selectedAppointmentId = arg.id;
       this.toggleModal();
     },
@@ -129,6 +136,10 @@ export default {
     },
 
     toggleModal() {
+      if (this.isModalActive) {
+        this.selectedAppointmentId = null;
+      }
+
       this.isModalActive = !this.isModalActive;
     },
 
@@ -153,7 +164,7 @@ export default {
         this.$refs.fullCalendar.calendar.refetchEvents();
         // @todo update eventData after updating the appointment
         console.log('UPDATED: ', this.eventData)
-        this.selectedAppointmentId = null;
+        // this.selectedAppointmentId = null;
       }
       // @todo handle server errors, when status is not equal to 'updated'
     },
@@ -223,6 +234,7 @@ export default {
   <base-modal
     v-if="isModalActive"
     :event-data="eventData"
+    :event-day="eventDay"
     @toggle-modal="onToggleModal"
     @toggle-cancellation="toggleUsersCancellation"
     @remove-appointment="removeAppointment"

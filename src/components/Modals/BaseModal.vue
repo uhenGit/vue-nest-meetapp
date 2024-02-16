@@ -9,6 +9,10 @@ export default {
       type: Object,
       require: true,
     },
+    eventDay: {
+      type: String,
+      default: null,
+    },
   },
 
   emits: ['toggle-modal', 'remove-appointment', 'toggle-cancellation'],
@@ -33,23 +37,18 @@ export default {
   },
 
   mounted() {
-    const propsAuthorEmail = this.eventData.extendedProps?.author?.email;
+    const propsAuthorEmail = this.eventData.author?.email;
     this.eventAuthor = propsAuthorEmail && propsAuthorEmail !== this.user.userEmail
         ? propsAuthorEmail
         : 'You';
 
-    if (!this.eventData.dayEl) {
-      this.event = {
-        ...this.eventData.extendedProps,
-        title: this.eventData.title,
-        authorEmail: propsAuthorEmail,
-        id: this.eventData.id,
-      };
-      const selectedDate = this.eventData.extendedProps.eventDate;
+    if (!this.eventDay) {
+      this.event = { ...this.eventData };
+      const selectedDate = this.eventData.eventDate;
       this.scheduledDay = selectedDate.split('T')[0];
       this.scheduledTime = selectedDate.split('T')[1].split('.')[0];
     } else {
-      this.scheduledDay = this.eventData.dateStr;
+      this.scheduledDay = this.eventDay;
       this.scheduledTime = '09:00:00';
       this.event.authorId = this.user.userId;
       this.event.authorEmail = this.user.userEmail;
@@ -78,13 +77,7 @@ export default {
     },
 
     hasNoChanges() {
-      const propEventDataClone = {
-        ...this.eventData?.extendedProps,
-        title: this.eventData.title,
-        authorEmail: this.event.authorEmail,
-      };
-
-      return JSON.stringify(propEventDataClone) === JSON.stringify(this.event);
+      return JSON.stringify(this.eventData) === JSON.stringify(this.event);
     },
   },
 

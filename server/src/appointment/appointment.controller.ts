@@ -71,17 +71,25 @@ export class AppointmentController {
   async toggleCancellation(
     @Param('id') appointmentId: string,
     @CookieUserDecorator('email') email: string,
-  ): Promise<boolean> {
+  ): Promise<object> {
     try {
-      const { cancellations } =
+      const response =
         await this.appointmentService.getAppointmentById(appointmentId);
-      const updatedUsersCancellations = this.updateUsers(cancellations, email);
+
+      if (!response) {
+        return { success: false, errorStatus: 'Not found' };
+      }
+
+      const updatedUsersCancellations = this.updateUsers(
+        response.cancellations,
+        email,
+      );
       await this.appointmentService.updateUsersCancellations(
         updatedUsersCancellations,
         appointmentId,
       );
 
-      return true;
+      return { success: true };
     } catch (err) {
       throw new Error(err.message);
     }

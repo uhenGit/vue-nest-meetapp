@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddAppointmentDto, GetAppointmentsDto } from './appointments.dto';
 import { AppointmentItemType } from './types';
@@ -99,9 +99,13 @@ export class AppointmentService {
   ): Promise<AppointmentItemType> {
     const { id } = changes;
     delete changes.id;
+
+    if (authorId !== changes.authorId) {
+      throw new ForbiddenException('You are not an author');
+    }
+
     delete changes.authorId;
-    // @todo check what if 'changes' contains extra fields (remove author object on a client side)
-    // @todo return updated appointment with the author object included
+
     try {
       return this.prismaService.appointment.update({
         where: {
