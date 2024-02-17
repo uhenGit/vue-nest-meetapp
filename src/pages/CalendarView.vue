@@ -206,9 +206,13 @@ export default {
     :options="basicCalendarOptions"
   >
     <template #eventContent="arg">
-      <div class="group flex justify-start pr-2 min-w-full bg-main-light text-white rounded-md">
+      <div
+        class="group flex justify-start pr-2 min-w-full text-white rounded-md"
+        :class="[ arg.event.extendedProps?.cancelled ? 'bg-gray-500' : 'bg-main-light' ]"
+      >
         <button
-          class="text-ellipsis pl-1.5 overflow-hidden w-full group-hover:bg-main-dark rounded-l-md"
+          class="text-ellipsis pl-1.5 overflow-hidden w-full rounded-l-md"
+          :class="[ arg.event.extendedProps?.cancelled ? 'group-hover:bg-gray-600' : 'group-hover:bg-main-dark' ]"
           role="switch"
           @click="handleDateClick(arg.event)"
         >

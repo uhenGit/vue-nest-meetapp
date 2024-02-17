@@ -130,14 +130,41 @@ export class AppointmentService {
     appointmentId: string,
   ): Promise<boolean> {
     try {
-      await this.prismaService.appointment.update({
-        where: {
-          id: appointmentId,
-        },
-        data: {
-          cancellations: emails,
-        },
-      });
+      const { participants, cancellations, cancelled } =
+        await this.prismaService.appointment.update({
+          where: {
+            id: appointmentId,
+          },
+          data: {
+            cancellations: emails,
+          },
+        });
+      const totalCancelled = this.allParticipantsCancelled(
+        participants,
+        cancellations,
+      );
+
+      if (totalCancelled && !cancelled) {
+        await this.prismaService.appointment.update({
+          where: {
+            id: appointmentId,
+          },
+          data: {
+            cancelled: true,
+          },
+        });
+      }
+
+      if (cancelled && !totalCancelled) {
+        await this.prismaService.appointment.update({
+          where: {
+            id: appointmentId,
+          },
+          data: {
+            cancelled: false,
+          },
+        });
+      }
 
       return true;
     } catch (err) {
@@ -155,5 +182,15 @@ export class AppointmentService {
       lte: to,
       gte: from,
     };
+  }
+
+  private allParticipantsCancelled(
+    participants: string[],
+    cancellations: string[],
+  ): boolean {
+    return (
+      participants.length === cancellations.length &&
+      participants.every((user) => cancellations.includes(user))
+    );
   }
 }

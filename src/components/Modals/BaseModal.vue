@@ -58,8 +58,8 @@ export default {
   computed: {
     ...mapWritableState(useUserStore, ['user']),
 
-    disable() {
-      return !isAuthor(this.event.authorId);
+    isAuthor() {
+      return isAuthor(this.event.authorId);
     },
 
     isCancelledAppointment() {
@@ -77,8 +77,8 @@ export default {
     },
 
     hasNoChanges() {
-      const eventClone = { ...this.event, updatedAt: null };
-      const eventDataClone = { ...this.eventData, updatedAt: null };
+      const eventClone = { ...this.event, updatedAt: null, cancelled: null };
+      const eventDataClone = { ...this.eventData, updatedAt: null, cancelled: null };
 
       return JSON.stringify(eventDataClone) === JSON.stringify(eventClone);
     },
@@ -183,7 +183,7 @@ export default {
             <td>
               <input
                 v-model="event.title"
-                :disabled="disable"
+                :disabled="!isAuthor"
                 class="rounded-md p-1 w-full"
                 :class="{ 'border-red-700': isEmptyTitle }"
                 @input.once="isEmptyTitle = false"
@@ -195,7 +195,7 @@ export default {
             <td>
               <input
                 v-model="scheduledDay"
-                :disabled="disable"
+                :disabled="!isAuthor"
                 type="date"
                 class="border-none cursor-pointer p-1"
               />
@@ -206,7 +206,7 @@ export default {
             <td>
               <input
                 v-model="scheduledTime"
-                :disabled="disable"
+                :disabled="!isAuthor"
                 type="time"
                 class="border-none cursor-pointer p-1"
               />
@@ -219,7 +219,7 @@ export default {
             </td>
           </tr>
           <tr
-            v-if="!disable"
+            v-if="isAuthor"
             class="leading-10 border-b-2"
           >
             <td class="pr-6">Add new participant email</td>
@@ -296,7 +296,7 @@ export default {
       <div class="mt-10 w-full flex space-x-52">
         <div>
           <button
-            v-if="eventData.id && !disable"
+            v-if="eventData.id && isAuthor"
             class="text-red-800 bg-white hover:bg-red-800 hover:text-white border rounded-md px-20 pb-0.5 mr-2"
             @click.stop="onRemoveAppointment"
           >
@@ -311,9 +311,9 @@ export default {
           </button>
         </div>
         <button
-          v-if="!disable"
-          class="bg-gray-800 text-white rounded-md px-20 pb-0.5"
-          :class="{ ['bg-gray-400 cursor-not-allowed']: hasNoChanges }"
+          v-if="isAuthor"
+          class="text-white rounded-md px-20 pb-0.5"
+          :class="[ hasNoChanges ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-800']"
           :disabled="hasNoChanges"
           @click.stop="onSubmit"
         >
