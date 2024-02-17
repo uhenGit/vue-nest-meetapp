@@ -124,30 +124,30 @@ export default {
 
       this.eventDay = arg.dateStr || null;
       this.selectedAppointmentId = arg.id;
-      this.toggleModal();
+      this.showModal();
     },
 
-    onToggleModal(evt) {
+    onHideModal(evt) {
       if (evt.status) {
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
 
-      this.toggleModal();
+      this.hideModal();
     },
 
-    toggleModal() {
-      if (this.isModalActive) {
-        this.selectedAppointmentId = null;
-      }
+    showModal() {
+      this.isModalActive = true;
+    },
 
-      this.isModalActive = !this.isModalActive;
+    hideModal() {
+      this.selectedAppointmentId = null;
+      this.isModalActive = false;
     },
 
     async removeAppointment() {
       const { id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
       this.hideMenu();
-      this.isModalActive = false;
-      this.selectedAppointmentId = null;
+      this.hideModal();
 
       // @todo handle else statement with the error notification
       if (id === this.selectedAppointmentId) {
@@ -235,7 +235,7 @@ export default {
     v-if="isModalActive"
     :event-data="eventData"
     :event-day="eventDay"
-    @toggle-modal="onToggleModal"
+    @hide-modal="onHideModal"
     @toggle-cancellation="toggleUsersCancellation"
     @remove-appointment="removeAppointment"
   />

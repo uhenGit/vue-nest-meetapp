@@ -15,7 +15,7 @@ export default {
     },
   },
 
-  emits: ['toggle-modal', 'remove-appointment', 'toggle-cancellation'],
+  emits: ['hide-modal', 'remove-appointment', 'toggle-cancellation'],
 
   data() {
     return {
@@ -44,9 +44,9 @@ export default {
 
     if (!this.eventDay) {
       this.event = { ...this.eventData };
-      const selectedDate = this.eventData.eventDate;
-      this.scheduledDay = selectedDate.split('T')[0];
-      this.scheduledTime = selectedDate.split('T')[1].split('.')[0];
+      const { eventDate } = this.eventData;
+      this.scheduledDay = eventDate.split('T')[0];
+      this.scheduledTime = eventDate.split('T')[1].split('.')[0];
     } else {
       this.scheduledDay = this.eventDay;
       this.scheduledTime = '09:00:00';
@@ -72,8 +72,8 @@ export default {
 
     cancelBtn() {
       return this.event.cancellations.includes(this.user.userEmail)
-        ? 'undo cancel'
-        : 'cancel';
+        ? 'recover me'
+        : 'remove me from event';
     },
 
     hasNoChanges() {
@@ -105,8 +105,8 @@ export default {
       this.$refs.participantEmail.focus();
     },
 
-    onToggleModal({ status }) {
-      this.$emit('toggle-modal', { status });
+    onHideModal({ status }) {
+      this.$emit('hide-modal', { status });
     },
 
     onRemoveAppointment() {
@@ -141,7 +141,7 @@ export default {
       }
 
       this.$nextTick(() => {
-        this.onToggleModal(response);
+        this.onHideModal(response);
       });
     },
   },
@@ -150,7 +150,7 @@ export default {
 <template>
   <div
     class="fixed w-full bg-black bg-opacity-40 h-screen top-0 left-0 flex justify-center px-8 z-20"
-    @click.stop="onToggleModal"
+    @click.stop="onHideModal"
   >
     <div
       class="relative p-12 self-start bg-white my-auto min-w-full max-w-screen-md rounded-md z-30"
@@ -158,7 +158,7 @@ export default {
     >
       <button
           class="absolute top-3 right-3 bg-gray-800 text-white rounded-md pl-3 pr-3 pb-0.5"
-          @click.stop="onToggleModal"
+          @click.stop="onHideModal"
       >
         close
       </button>
