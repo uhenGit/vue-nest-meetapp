@@ -77,8 +77,17 @@ export default {
     },
 
     hasNoChanges() {
-      return JSON.stringify(this.eventData) === JSON.stringify(this.event);
+      const eventClone = { ...this.event, updatedAt: null };
+      const eventDataClone = { ...this.eventData, updatedAt: null };
+
+      return JSON.stringify(eventDataClone) === JSON.stringify(eventClone);
     },
+  },
+
+  watch: {
+    'eventData.cancellations'(newValue) {
+      this.event.cancellations = newValue;
+    }
   },
 
   methods: {

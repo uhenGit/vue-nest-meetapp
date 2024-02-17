@@ -118,11 +118,9 @@ export const useAppointmentStore = defineStore(
 						},
 						credentials: 'include',
 					});
-					console.log('action response: ', response);
 					const result = await response.json();
-					console.log('action result: ', result);
 
-					return result.status ? { status: 'updated' } : {  status: response.error || response.statusText };
+					return result.success ? { status: 'updated' } : {  status: response.error || result.errorStatus };
 				} catch (err) {
 					console.log('CANCELLATION ERROR: ', err);
 				}

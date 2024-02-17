@@ -157,14 +157,13 @@ export default {
 
     async toggleUsersCancellation() {
       const { status } = await this.handleCancellation(this.selectedAppointmentId);
-      this.hideMenu();
-      // this.isModalActive = false;
 
       if (status === 'updated') {
         this.$refs.fullCalendar.calendar.refetchEvents();
-        // @todo update eventData after updating the appointment
-        console.log('UPDATED: ', this.eventData)
-        // this.selectedAppointmentId = null;
+
+        if (this.isShowMenu) {
+          this.hideMenu();
+        }
       }
       // @todo handle server errors, when status is not equal to 'updated'
     },
