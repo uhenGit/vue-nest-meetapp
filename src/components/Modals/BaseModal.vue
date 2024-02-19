@@ -33,6 +33,7 @@ export default {
       isInvalidEmail: false,
       isEmptyTitle: false,
       participantEmail: '',
+      saveChanges: true,
     };
   },
 
@@ -43,10 +44,11 @@ export default {
         : 'You';
 
     if (!this.eventDay) {
-      this.event = { ...this.eventData };
+      this.event = structuredClone(this.eventData);
       const { eventDate } = this.eventData;
-      this.scheduledDay = eventDate.split('T')[0];
-      this.scheduledTime = eventDate.split('T')[1].split('.')[0];
+      const eventDayTime = eventDate.split('T');
+      this.scheduledDay = eventDayTime[0];
+      this.scheduledTime = eventDayTime[1].split('.')[0];
     } else {
       this.scheduledDay = this.eventDay;
       this.scheduledTime = '09:00:00';
@@ -77,10 +79,19 @@ export default {
     },
 
     hasNoChanges() {
-      const eventClone = { ...this.event, updatedAt: null, cancelled: null };
-      const eventDataClone = { ...this.eventData, updatedAt: null, cancelled: null };
+      const eventClone = {
+        cancellations: this.event.cancellations,
+        participants: this.event.participants,
+        title: this.event.title,
+      };
+      const eventDataClone = {
+        cancellations: this.eventData.cancellations,
+        participants: this.eventData.participants,
+        title: this.eventData.title,
+      };
+      const dateIdentity = this.checkDateIdentity('time') || this.checkDateIdentity('day');
 
-      return JSON.stringify(eventDataClone) === JSON.stringify(eventClone);
+      return (JSON.stringify(eventDataClone) === JSON.stringify(eventClone) && !dateIdentity);
     },
   },
 
@@ -90,12 +101,45 @@ export default {
     }
   },
 
+  beforeUnmount() {
+    this.event = {
+      title: '',
+      authorId: '',
+      authorEmail: '',
+      cancelled: false,
+      participants: [],
+      cancellations: [],
+    };
+  },
+
   methods: {
     ...mapActions(useAppointmentStore, [
       'addAppointment',
       'removeSelectedAppointment',
       'updateAppointment',
     ]),
+
+    hasChanges(fieldName) {
+      if (fieldName === 'day' || fieldName === 'time') {
+        return this.checkDateIdentity(fieldName);
+      }
+
+      return JSON.stringify(this.event[fieldName]) !== JSON.stringify(this.eventData[fieldName]);
+    },
+
+    checkDateIdentity(dateField) {
+      if (!this.eventDay) {
+        const eventDayTime = this.eventData.eventDate.split('T');
+
+        return dateField === 'day'
+          ? this.scheduledDay !== eventDayTime[0]
+          : this.scheduledTime !== eventDayTime[1].split('.')[0];
+      } else {
+        return dateField === 'day'
+          ? this.scheduledDay !== this.eventDay
+          : this.scheduledTime !== '09:00:00';
+      }
+    },
 
     addParticipant() {
       this.isInvalidEmail = false;
@@ -112,6 +156,12 @@ export default {
       this.participantEmail = '';
       this.isInvalidEmail = false;
       this.$refs.participantEmail.focus();
+    },
+
+    clearFrames() {
+      this.isEmptyTitle = false;
+      this.saveChanges = true;
+      this.isInvalidEmail = false;
     },
 
     onHideModal({ status }) {
@@ -132,10 +182,22 @@ export default {
       this.$emit('remove-appointment');
     },
 
+    onDeleteParticipant(emailToDelete) {
+      this.event.participants = this.event.participants.filter((email) => email !== emailToDelete);
+    },
+
     async onSubmit() {
       if (!this.event.title) {
         this.isEmptyTitle = true;
         return;
+      }
+
+      if (!this.hasNoChanges) {
+        this.saveChanges = window.confirm('The document has unsaved changes. Click "Yes" to save the changes.');
+
+        if (!this.saveChanges) {
+          return;
+        }
       }
 
       this.event.eventDate = new Date(`${this.scheduledDay}T${this.scheduledTime}`);
@@ -185,8 +247,11 @@ export default {
                 v-model="event.title"
                 :disabled="!isAuthor"
                 class="rounded-md p-1 w-full"
-                :class="{ 'border-red-700': isEmptyTitle }"
-                @input.once="isEmptyTitle = false"
+                :class="{
+                  'border-red-700': isEmptyTitle,
+                  'border-orange-700 bg-orange-100': (hasChanges('title') && !saveChanges)
+                }"
+                @input.once="clearFrames"
               />
             </td>
           </tr>
@@ -197,7 +262,11 @@ export default {
                 v-model="scheduledDay"
                 :disabled="!isAuthor"
                 type="date"
-                class="border-none cursor-pointer p-1"
+                class="cursor-pointer p-1"
+                :class="[ (hasChanges('day') && !saveChanges)
+                  ? 'border-orange-700 bg-orange-100 rounded-md'
+                  : 'border-none' ]"
+                @input="clearFrames"
               />
             </td>
           </tr>
@@ -208,7 +277,11 @@ export default {
                 v-model="scheduledTime"
                 :disabled="!isAuthor"
                 type="time"
-                class="border-none cursor-pointer p-1"
+                class="cursor-pointer p-1"
+                :class="[ (hasChanges('time') && !saveChanges)
+                  ? 'border-orange-700 bg-orange-100 rounded-md'
+                  : 'border-none' ]"
+                @input="clearFrames"
               />
             </td>
           </tr>
@@ -230,7 +303,7 @@ export default {
                   v-model="participantEmail"
                   class="rounded-md p-1 w-full"
                   @keyup.enter="addParticipant"
-                  @input="isInvalidEmail = false"
+                  @input="clearFrames"
                 />
                 <span class="text-xs">
                   Hit the Enter key to add and validate emails
@@ -246,14 +319,28 @@ export default {
           </tr>
           <tr class="leading-10 border-b-2">
             <td class="pr-6">Participants emails</td>
-            <td class="flex">
+            <td
+              class="flex"
+              :class="{
+                'border-orange-700 bg-orange-100': (hasChanges('participants') && !saveChanges)
+            }"
+            >
               <template
                 v-for="(participant, idx) in event.participants"
                 :key="idx"
               >
-                <span>
-                  {{ participant }}
-                </span>
+                <div class="group">
+                  <p class="relative group-hover:border-orange-700 rounded-md">
+                    <span class="">
+                      {{ participant }}
+                    </span>
+                    <span
+                        class="absolute bottom-0 group-hover:after:content-['x'] after:ml-1.5 after:text-orange-700 after:cursor-pointer after:border-orange-700"
+                        @click="onDeleteParticipant(participant)"
+                    >
+                    </span>
+                  </p>
+                </div>
                 <span
                   v-if="idx !== event.participants.length - 1"
                 >
@@ -277,7 +364,9 @@ export default {
             class="leading-10 border-b-2"
           >
             <td class="pr-6">Participants that cancelled</td>
-            <td>
+            <td :class="{
+              'border-orange-700 bg-orange-100': (hasChanges('cancellations') && !saveChanges)
+            }">
               <template
                 v-for="(refuser, idx) in event.cancellations"
                 :key="idx"
@@ -302,7 +391,6 @@ export default {
           >
             delete
           </button>
-<!--          handle button content depends on existing cancellations-->
           <button
             class="text-orange-400 bg-white hover:bg-orange-400 hover:text-white border rounded-md px-20 pb-0.5"
             @click.stop="$emit('toggle-cancellation')"
