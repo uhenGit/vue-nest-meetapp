@@ -22,6 +22,7 @@ export const useAppointmentStore = defineStore(
 		actions: {
 			async addAppointment(appointment) {
 				try {
+					const normalizedEventDate = this.normalizeDateByTimezone(appointment.eventDate);
 					const { ok, error, statusText } = await fetch('http://localhost:3001/appointments/add-appointment', {
 						method: 'POST',
 						headers: {
@@ -29,7 +30,10 @@ export const useAppointmentStore = defineStore(
 							'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
 						},
 						credentials: 'include',
-						body: JSON.stringify(appointment),
+						body: JSON.stringify({
+							...appointment,
+							eventDate: normalizedEventDate,
+						}),
 					});
 
 					return ok ? { status: ok } : { status: error || statusText };
@@ -92,6 +96,8 @@ export const useAppointmentStore = defineStore(
 					delete changes.author;
 					delete changes.authorEmail;
 					delete changes.updatedAt;
+					// include the timezone to the date object to avoid time shift after JSON.stringify()
+					const normalizedEventDate = this.normalizeDateByTimezone(changes.eventDate);
 					const response = await fetch(url, {
 						method: 'PUT',
 						headers: {
@@ -99,7 +105,10 @@ export const useAppointmentStore = defineStore(
 							'Content-Type': 'application/json',
 						},
 						credentials: 'include',
-						body: JSON.stringify(changes),
+						body: JSON.stringify({
+							...changes,
+							eventDate: normalizedEventDate,
+						}),
 					});
 
 					// @todo check status usage here
@@ -133,6 +142,13 @@ export const useAppointmentStore = defineStore(
 
 			setSelectedPeriod(period) {
 				this.selectedPeriod = `${period.month}/${period.year}`;
+			},
+
+			// include timezone to the date object to avoid time shift after JSON.stringify()
+			normalizeDateByTimezone(date) {
+				return new Date(
+					date.getTime() - (date.getTimezoneOffset() * 60000)
+				);
 			},
 		},
 	}
