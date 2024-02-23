@@ -2,8 +2,13 @@
 import { mapActions, mapWritableState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
 import { isAuthor, isValidEmail } from '@/utils';
+import ChipElement from '@/components/UI/ChipElement.vue';
 
 export default {
+  components: {
+    ChipElement,
+  },
+
   props: {
     eventData: {
       type: Object,
@@ -220,7 +225,7 @@ export default {
 </script>
 <template>
   <div
-    class="fixed w-full bg-black bg-opacity-40 h-screen top-0 left-0 flex justify-center px-8 z-20"
+    class="fixed w-full text-sm bg-black bg-opacity-40 h-screen top-0 left-0 flex justify-center px-8 z-20"
     @click.stop="onHideModal"
   >
     <div
@@ -240,7 +245,7 @@ export default {
         class="table-auto min-w-full mt-4"
       >
         <tbody>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td class="pr-6">Title</td>
             <td>
               <input
@@ -255,7 +260,7 @@ export default {
               />
             </td>
           </tr>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td class="pr-6">Event date</td>
             <td>
               <input
@@ -270,7 +275,7 @@ export default {
               />
             </td>
           </tr>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td>Event time</td>
             <td>
               <input
@@ -285,7 +290,7 @@ export default {
               />
             </td>
           </tr>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td class="pr-6">Event author</td>
             <td>
               <span>{{ eventAuthor }}</span>
@@ -293,7 +298,7 @@ export default {
           </tr>
           <tr
             v-if="isAuthor"
-            class="leading-10 border-b-2"
+            class="leading-5 border-b-2"
           >
             <td class="pr-6">Add new participant email</td>
             <td class="flex mt-2 relative">
@@ -317,7 +322,7 @@ export default {
               </span>
             </td>
           </tr>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td class="pr-6">Participants emails</td>
             <td
               class="flex"
@@ -329,23 +334,11 @@ export default {
                 v-for="(participant, idx) in event.participants"
                 :key="idx"
               >
-                <div class="group">
-                  <p class="relative group-hover:border-orange-700 rounded-md">
-                    <span class="">
-                      {{ participant }}
-                    </span>
-                    <span
-                        class="absolute bottom-0 group-hover:after:content-['x'] after:ml-1.5 after:text-orange-700 after:cursor-pointer after:border-orange-700"
-                        @click="onDeleteParticipant(participant)"
-                    >
-                    </span>
-                  </p>
-                </div>
-                <span
-                  v-if="idx !== event.participants.length - 1"
-                >
-                  ,&ensp;
-                </span>
+                <chip-element
+                  :content="participant"
+                  removable
+                  @remove-action="onDeleteParticipant(participant)"
+                />
               </template>
               <span
                 v-if="isInvalidEmail"
@@ -355,28 +348,25 @@ export default {
               </span>
             </td>
           </tr>
-          <tr class="leading-10 border-b-2">
+          <tr class="leading-5 border-b-2">
             <td class="pr-6">Cancelled by all participants</td>
             <td>{{ isCancelledAppointment }}</td>
           </tr>
           <tr
             v-if="isPartlyCancelledAppointment"
-            class="leading-10 border-b-2"
+            class="leading-5 border-b-2"
           >
             <td class="pr-6">Participants that cancelled</td>
-            <td :class="{
+            <td
+              class="flex"
+              :class="{
               'border-orange-700 bg-orange-100': (hasChanges('cancellations') && !saveChanges)
             }">
               <template
                 v-for="(refuser, idx) in event.cancellations"
                 :key="idx"
               >
-                <span>{{ refuser }}</span>
-                <span
-                  v-if="idx !== event.cancellations.length - 1"
-                >
-                  ,&ensp;
-                </span>
+                <chip-element :content="refuser"/>
               </template>
             </td>
           </tr>
