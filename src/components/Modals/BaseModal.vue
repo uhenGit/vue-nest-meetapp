@@ -3,10 +3,14 @@ import { mapActions, mapWritableState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
 import { isAuthor, isValidEmail } from '@/utils';
 import ChipElement from '@/components/UI/ChipElement.vue';
+import ContextMenu from '@/components/Modals/ContextMenu.vue';
+import MenuButton from '@/components/UI/MenuButton.vue';
 
 export default {
   components: {
+    ContextMenu,
     ChipElement,
+    MenuButton,
   },
 
   props: {
@@ -39,6 +43,8 @@ export default {
       isEmptyTitle: false,
       participantEmail: '',
       saveChanges: true,
+      isShowMenu: false,
+      menuPosition: {},
     };
   },
 
@@ -64,6 +70,26 @@ export default {
 
   computed: {
     ...mapWritableState(useUserStore, ['user']),
+
+    menuItems() {
+      return [
+        {
+          name: 'Delete appointment',
+          disable: this.eventData.id && !this.isAuthor,
+          action: this.onRemoveAppointment,
+        },
+        {
+          name: 'Cancel appointment',
+          disable: false,
+          action: () => this.$emit('toggle-cancellation'),
+        },
+        {
+          name: 'Duplicate appointment',
+          disable: false,
+          action: this.onDuplicateAppointment,
+        },
+      ]
+    },
 
     isAuthor() {
       return isAuthor(this.event.authorId);
@@ -173,6 +199,37 @@ export default {
       this.$emit('hide-modal', { status });
     },
 
+    showMenu({ evt }) {
+      this.menuPosition = this.setPosition(evt);
+      this.isShowMenu = true;
+    },
+
+    hideMenu() {
+      this.menuPosition = {
+        maxHeight: null,
+      };
+      this.isShowMenu = false;
+    },
+
+    setPosition(event) {
+      const coords = {
+        left: `${event.x}px`,
+        top: `${event.y}px`,
+      };
+      const documentWidth = document.documentElement.clientWidth;
+      const documentHeight = document.documentElement.clientHeight;
+
+      if ((event.x + 200) > documentWidth) {
+        coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
+      }
+
+      if ((event.y + 150) > documentHeight) {
+        coords.maxHeight = '150px';
+      }
+
+      return coords;
+    },
+
     onRemoveAppointment() {
       this.event = {
         title: '',
@@ -238,9 +295,14 @@ export default {
       >
         close
       </button>
-      <h3 class="text-2xl font-bold">
-        {{ modalTitle }}
-      </h3>
+      <div class="flex relative">
+        <h3 class="text-2xl font-bold">
+          {{ modalTitle }}
+        </h3>
+        <div class="absolute right-0 group">
+          <menu-button @show-menu="showMenu"/>
+        </div>
+      </div>
       <table
         class="table-auto min-w-full mt-4"
       >
@@ -399,5 +461,33 @@ export default {
         </button>
       </div>
     </div>
+    <context-menu
+        v-if="isShowMenu"
+        :menu-position="menuPosition"
+        @hide-menu="hideMenu"
+    >
+      <template #menu-name>
+        <p
+            class="text-white text-md mb-2 px-3"
+            role="menubar"
+        >
+          Appointment's actions
+        </p>
+      </template>
+      <template #menu-list>
+        <ul>
+          <li
+              v-for="(item, idx) in menuItems"
+              :key="idx"
+              class="hover:bg-gray-700 px-3 py-2 text-sm rounded-b-md"
+              :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
+              role="menuitem"
+              @click="item.action"
+          >
+            {{ item.name }}
+          </li>
+        </ul>
+      </template>
+    </context-menu>
   </div>
 </template>

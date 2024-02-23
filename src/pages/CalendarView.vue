@@ -6,6 +6,7 @@ import { useAppointmentStore, useUserStore } from '@/stores';
 import { mapActions, mapWritableState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
+import MenuButton from '@/components/UI/MenuButton.vue';
 import { isAuthor } from '@/utils/usersAppointment.js';
 
 export default {
@@ -15,6 +16,7 @@ export default {
     BaseModal,
     ContextMenu,
     FullCalendar,
+    MenuButton,
   },
 
   data() {
@@ -78,6 +80,11 @@ export default {
           action: this.disabled ? null : this.toggleUsersCancellation,
         },
         {
+          name: 'Duplicate appointment',
+          disable: false,
+          action: this.onDuplicateAppointment,
+        },
+        {
           name: 'View/edit details',
           action: () => {
             const selectedAppointment = this.activeAppointments.find(({ id }) => id === this.selectedAppointmentId);
@@ -117,11 +124,7 @@ export default {
     ]),
 
     handleDateClick(arg) {
-      if (this.isShowMenu) {
-        this.hideMenu();
-        return;
-      }
-
+      this.hideMenu();
       this.eventDay = arg.dateStr || null;
       this.selectedAppointmentId = arg.id;
       this.showModal();
@@ -168,7 +171,12 @@ export default {
       // @todo handle server errors, when status is not equal to 'updated'
     },
 
-    showMenu(evt, itemId) {
+    onDuplicateAppointment() {
+      // use this.eventData
+      console.log('Duplicate: ', this.eventData);
+    },
+
+    showMenu({ evt, itemId }) {
       this.menuPosition = this.setPosition(evt);
       this.selectedAppointmentId = itemId;
       this.isShowMenu = true;
@@ -189,12 +197,15 @@ export default {
       };
       const documentWidth = document.documentElement.clientWidth;
       const documentHeight = document.documentElement.clientHeight;
+
       if ((event.x + 200) > documentWidth) {
         coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
       }
+
       if ((event.y + 150) > documentHeight) {
         coords.maxHeight = '150px';
       }
+
       return coords;
     },
   },
@@ -218,19 +229,10 @@ export default {
         >
           {{ arg.event.title }}
         </button>
-        <button
-          class="bg-white ml-2 my-2 group-hover:bg-gray-300 text-gray-950 rounded-full w-4 h-4 relative"
-          @click.stop="showMenu($event, arg.event.id)"
-        >
-          <svg
-            viewBox="0 0 16 16"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="#3d3846"
-            class="w-4 h-4"
-          >
-            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-          </svg>
-        </button>
+        <menu-button
+          :content="arg.event.id"
+          @show-menu="showMenu"
+        />
       </div>
     </template>
   </full-calendar>

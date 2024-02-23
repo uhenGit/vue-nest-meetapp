@@ -35,7 +35,7 @@ export default {
 </script>
 <template>
   <div
-    class="absolute w-1/5 z-10 bg-gray-800 rounded-md pt-3"
+    class="absolute w-1/5 z-50 bg-gray-800 rounded-md pt-3"
     :style="menuPosition"
     role="menu"
   >
