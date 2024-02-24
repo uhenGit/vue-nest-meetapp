@@ -121,6 +121,7 @@ export default {
       'loadCurrentMonthAppointments',
       'removeSelectedAppointment',
       'handleCancellation',
+      'cloneAppointment',
     ]),
 
     handleDateClick(arg) {
@@ -131,7 +132,7 @@ export default {
     },
 
     onHideModal(evt) {
-      if (evt.status) {
+      if (evt.success) {
         this.$refs.fullCalendar.calendar.refetchEvents();
       }
 
@@ -148,14 +149,15 @@ export default {
     },
 
     async removeAppointment() {
-      const { id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
-      this.hideMenu();
-      this.hideModal();
-
+      const { status } = await this.removeSelectedAppointment(this.selectedAppointmentId);
       // @todo handle else statement with the error notification
-      if (id === this.selectedAppointmentId) {
-        this.$refs.fullCalendar.calendar.refetchEvents();
+      console.log('REMOVE: ', status, this.selectedAppointmentId);
+      if (status === 'removed') {
+        this.onHideModal({ success: true });
       }
+
+      this.hideMenu();
+      // this.hideModal();
     },
 
     async toggleUsersCancellation() {
@@ -171,9 +173,36 @@ export default {
       // @todo handle server errors, when status is not equal to 'updated'
     },
 
-    onDuplicateAppointment() {
+    async onDuplicateAppointment() {
       // use this.eventData
-      console.log('Duplicate: ', this.eventData);
+      console.log('Duplicate: ', this.user, this.eventData);
+      const eventClone = {};
+      const clearCancellations = this.eventData.cancellations.length > 0
+        && window.confirm('Do you want to delete all the users from the cancellations list?');
+
+      if (clearCancellations) {
+        eventClone.cancellations = [];
+      }
+
+      if (this.disabled) {
+        eventClone.participants = this.eventData.participants
+            .filter((participant) => participant !== this.user.userEmail)
+            .concat([this.eventData.author.email]);
+        eventClone.authorId = this.user.userId;
+      }
+
+      const newAppointment = {
+        ...this.eventData,
+        ...eventClone,
+      };
+      const cloneStatus = await this.cloneAppointment(newAppointment);
+      console.log('Duplicate status: ', cloneStatus);
+      // refetch events and drop selected appointments id
+      if (cloneStatus.success) {
+        this.onHideModal(cloneStatus);
+        this.hideMenu();
+      }
+      // @todo handle errors
     },
 
     showMenu({ evt, itemId }) {
@@ -220,9 +249,10 @@ export default {
       <div
         class="group flex justify-start pr-2 min-w-full text-white rounded-md"
         :class="[ arg.event.extendedProps?.cancelled ? 'bg-gray-500' : 'bg-main-light' ]"
+        :title="arg.event.title"
       >
         <button
-          class="text-ellipsis pl-1.5 overflow-hidden w-full rounded-l-md"
+          class="text-ellipsis pl-1.5 overflow-hidden w-full rounded-l-md text-xs"
           :class="[ arg.event.extendedProps?.cancelled ? 'group-hover:bg-gray-600' : 'group-hover:bg-main-dark' ]"
           role="switch"
           @click="handleDateClick(arg.event)"
@@ -243,6 +273,7 @@ export default {
     @hide-modal="onHideModal"
     @toggle-cancellation="toggleUsersCancellation"
     @remove-appointment="removeAppointment"
+    @duplicate-appointment="onDuplicateAppointment"
   />
   <context-menu
       v-if="isShowMenu"

@@ -23,7 +23,7 @@ defineEmits(['remove-action']);
       </span>
       <span
         v-if="removable"
-        class="absolute right-1 top-2.5 mt-0.5 block w-1/5 h-1.5 leading-none after:block after:font-bold after:absolute after:bottom-0.5 after:right-0 after:content-['x'] after:leading-2 after:px-1 after:border after:rounded-full after:ml-1.5 after:text-orange-700 after:cursor-pointer after:border-orange-700"
+        class="absolute right-1 top-1 mt-0.5 block w-1/5 leading-none after:block after:font-bold after:absolute after:bottom-1 after:right-0 after:content-['x'] after:leading-2 after:px-1 after:border after:rounded-full after:text-orange-700 after:cursor-pointer after:border-orange-700"
         @click="$emit('remove-action')"
       >
       </span>

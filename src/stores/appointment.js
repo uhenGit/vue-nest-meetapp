@@ -22,6 +22,7 @@ export const useAppointmentStore = defineStore(
 		actions: {
 			async addAppointment(appointment) {
 				try {
+					// @todo check clone method here
 					const normalizedEventDate = this.normalizeDateByTimezone(appointment.eventDate);
 					const { ok, error, statusText } = await fetch('http://localhost:3001/appointments/add-appointment', {
 						method: 'POST',
@@ -36,10 +37,23 @@ export const useAppointmentStore = defineStore(
 						}),
 					});
 
-					return ok ? { status: ok } : { status: error || statusText };
+					return ok ? { success: ok } : { success: false, error: error || statusText };
 				} catch (err) {
 					throw new Error(`Create appointment error: ${JSON.stringify(err)}`);
 				}
+			},
+
+			async cloneAppointment(clone) {
+				const processedClone = {
+					title: `${clone.title} (copy)`,
+					eventDate: clone.eventDate,
+					participants: clone.participants,
+					cancellations: clone.cancellations,
+					authorId: clone.authorId,
+					cancelled: clone.cancelled,
+				};
+
+				return this.addAppointment(processedClone);
 			},
 
 			async loadCurrentMonthAppointments(period) {
@@ -96,6 +110,7 @@ export const useAppointmentStore = defineStore(
 					delete changes.author;
 					delete changes.authorEmail;
 					delete changes.updatedAt;
+					delete changes.createdAt;
 					// include the timezone to the date object to avoid time shift after JSON.stringify()
 					const normalizedEventDate = this.normalizeDateByTimezone(changes.eventDate);
 					const response = await fetch(url, {
@@ -112,7 +127,7 @@ export const useAppointmentStore = defineStore(
 					});
 
 					// @todo check status usage here
-					return { status: response.ok };
+					return { success: response.ok };
 				} catch (err) {
 					console.error('UPDATE ERROR: ', err);
 				}

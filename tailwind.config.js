@@ -8,6 +8,9 @@ module.exports = {
         'main-light': '#2c3e50',
       },
     },
+    fontSize: {
+      xs: '0.6rem',
+    },
   },
   plugins: [
     require('@tailwindcss/forms'),

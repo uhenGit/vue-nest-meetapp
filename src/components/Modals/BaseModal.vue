@@ -24,7 +24,7 @@ export default {
     },
   },
 
-  emits: ['hide-modal', 'remove-appointment', 'toggle-cancellation'],
+  emits: ['hide-modal', 'remove-appointment', 'toggle-cancellation', 'duplicate-appointment'],
 
   data() {
     return {
@@ -86,7 +86,7 @@ export default {
         {
           name: 'Duplicate appointment',
           disable: false,
-          action: this.onDuplicateAppointment,
+          action: () => this.$emit('duplicate-appointment'),
         },
       ]
     },
@@ -109,6 +109,7 @@ export default {
         : 'remove me from event';
     },
 
+    // @todo fix json comparing, and loop through the arrays of participants and cancellations
     hasNoChanges() {
       const eventClone = {
         cancellations: this.event.cancellations,
@@ -195,8 +196,8 @@ export default {
       this.isInvalidEmail = false;
     },
 
-    onHideModal({ status }) {
-      this.$emit('hide-modal', { status });
+    onHideModal({ success }) {
+      this.$emit('hide-modal', { success });
     },
 
     showMenu({ evt }) {
@@ -254,7 +255,7 @@ export default {
         return;
       }
 
-      if (!this.hasNoChanges) {
+      if (this.eventData.id && !this.hasNoChanges) {
         this.saveChanges = window.confirm('The document has unsaved changes. Click "Yes" to save the changes.');
 
         if (!this.saveChanges) {
