@@ -283,7 +283,7 @@ export default {
 </script>
 <template>
   <div
-    class="fixed w-full text-sm bg-black bg-opacity-40 h-screen top-0 left-0 flex justify-center px-8 z-20"
+    class="fixed w-full bg-black bg-opacity-40 h-screen top-0 left-0 flex justify-center px-8 z-20 text-md"
     @click.stop="onHideModal"
   >
     <div
@@ -305,7 +305,7 @@ export default {
         </div>
       </div>
       <table
-        class="table-auto min-w-full mt-4"
+        class="table-fixed min-w-full mt-4"
       >
         <tbody>
           <tr class="leading-5 border-b-2">
@@ -314,7 +314,7 @@ export default {
               <input
                 v-model="event.title"
                 :disabled="!isAuthor"
-                class="rounded-md p-1 w-full"
+                class="rounded-md p-1 w-full border-opacity-40 text-md"
                 :class="{
                   'border-red-700': isEmptyTitle,
                   'border-orange-700 bg-orange-100': (hasChanges('title') && !saveChanges)
@@ -330,7 +330,7 @@ export default {
                 v-model="scheduledDay"
                 :disabled="!isAuthor"
                 type="date"
-                class="cursor-pointer p-1"
+                class="cursor-pointer p-1 text-md"
                 :class="[ (hasChanges('day') && !saveChanges)
                   ? 'border-orange-700 bg-orange-100 rounded-md'
                   : 'border-none' ]"
@@ -345,7 +345,7 @@ export default {
                 v-model="scheduledTime"
                 :disabled="!isAuthor"
                 type="time"
-                class="cursor-pointer p-1"
+                class="cursor-pointer p-1 text-md"
                 :class="[ (hasChanges('time') && !saveChanges)
                   ? 'border-orange-700 bg-orange-100 rounded-md'
                   : 'border-none' ]"
@@ -356,7 +356,9 @@ export default {
           <tr class="leading-5 border-b-2">
             <td class="pr-6">Event author</td>
             <td>
-              <span>{{ eventAuthor }}</span>
+              <p class="p-1">
+                {{ eventAuthor }}
+              </p>
             </td>
           </tr>
           <tr
@@ -399,13 +401,13 @@ export default {
               >
                 <chip-element
                   :content="participant"
-                  removable
+                  :removable="eventData.author?.email === user.userEmail"
                   @remove-action="onDeleteParticipant(participant)"
                 />
               </template>
               <span
                 v-if="isInvalidEmail"
-                class="text-red-700 text-sm font-bold mt-3 ml-3"
+                class="text-red-700 font-bold mt-3 ml-3"
               >
                 Invalid email
               </span>
@@ -413,7 +415,11 @@ export default {
           </tr>
           <tr class="leading-5 border-b-2">
             <td class="pr-6">Cancelled by all participants</td>
-            <td>{{ isCancelledAppointment }}</td>
+            <td>
+              <p class="p-1">
+                {{ isCancelledAppointment }}
+              </p>
+            </td>
           </tr>
           <tr
             v-if="isPartlyCancelledAppointment"
@@ -421,7 +427,7 @@ export default {
           >
             <td class="pr-6">Participants that cancelled</td>
             <td
-              class="flex"
+              class="flex flex-wrap"
               :class="{
               'border-orange-700 bg-orange-100': (hasChanges('cancellations') && !saveChanges)
             }">
@@ -435,22 +441,22 @@ export default {
           </tr>
         </tbody>
       </table>
-      <div class="mt-10 w-full flex space-x-52">
-        <div>
-          <button
-            v-if="eventData.id && isAuthor"
-            class="text-red-800 bg-white hover:bg-red-800 hover:text-white border rounded-md px-20 pb-0.5 mr-2"
-            @click.stop="onRemoveAppointment"
-          >
-            delete
-          </button>
-          <button
-            class="text-orange-400 bg-white hover:bg-orange-400 hover:text-white border rounded-md px-20 pb-0.5"
-            @click.stop="$emit('toggle-cancellation')"
-          >
-            {{ cancelBtn }}
-          </button>
-        </div>
+      <div class="mt-10 w-full flex justify-end">
+<!--        <div>-->
+<!--          <button-->
+<!--            v-if="eventData.id && isAuthor"-->
+<!--            class="text-red-800 bg-white hover:bg-red-800 hover:text-white border rounded-md px-20 pb-0.5 mr-2"-->
+<!--            @click.stop="onRemoveAppointment"-->
+<!--          >-->
+<!--            delete-->
+<!--          </button>-->
+<!--          <button-->
+<!--            class="text-orange-400 bg-white hover:bg-orange-400 hover:text-white border rounded-md px-20 pb-0.5"-->
+<!--            @click.stop="$emit('toggle-cancellation')"-->
+<!--          >-->
+<!--            {{ cancelBtn }}-->
+<!--          </button>-->
+<!--        </div>-->
         <button
           v-if="isAuthor"
           class="text-white rounded-md px-20 pb-0.5"
@@ -463,7 +469,7 @@ export default {
       </div>
     </div>
     <context-menu
-        v-if="isShowMenu"
+        v-if="isShowMenu && eventData.id"
         :menu-position="menuPosition"
         @hide-menu="hideMenu"
     >
@@ -480,7 +486,7 @@ export default {
           <li
               v-for="(item, idx) in menuItems"
               :key="idx"
-              class="hover:bg-gray-700 px-3 py-2 text-sm rounded-b-md"
+              class="hover:bg-gray-700 px-3 py-2 rounded-b-md"
               :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
               role="menuitem"
               @click="item.action"

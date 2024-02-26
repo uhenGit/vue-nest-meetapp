@@ -10,6 +10,7 @@ module.exports = {
     },
     fontSize: {
       xs: '0.6rem',
+      md: '0.9rem',
     },
   },
   plugins: [

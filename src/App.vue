@@ -55,7 +55,7 @@ export default {
             <div>
               <button
                   type="button"
-                  class="relative flex rounded-full bg-gray-800 text-sm"
+                  class="relative flex rounded-full bg-gray-800"
                   @click="onLogout"
               >
                 <span class="sr-only">Logout</span>

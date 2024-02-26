@@ -293,7 +293,7 @@ export default {
         <li
             v-for="(item, idx) in menuItems"
             :key="idx"
-            class="hover:bg-gray-700 px-3 py-2 text-sm rounded-b-md"
+            class="hover:bg-gray-700 px-3 py-2 rounded-b-md"
             :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
             role="menuitem"
             @click="item.action"
