@@ -22,7 +22,6 @@ export default {
     handleClickOutside(evt) {
       // prevent hide-menu event and handle it in the parent
       if (['menu', 'menuitem', 'menubar', 'switch', 'gridcell'].includes(evt.target.role)
-          || evt.target.classList.contains('fc-daygrid-day-events')
           || evt.target.classList.contains('fc-daygrid-day-top')) {
 
         return;

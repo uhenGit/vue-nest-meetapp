@@ -1,7 +1,7 @@
 <script>
 import { mapActions, mapWritableState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
-import { isAuthor, isValidEmail } from '@/utils';
+import { isAuthor, isValidEmail, getFullTime } from '@/utils';
 import ChipElement from '@/components/UI/ChipElement.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
@@ -57,9 +57,9 @@ export default {
     if (!this.eventDay) {
       this.event = structuredClone(this.eventData);
       const { eventDate } = this.eventData;
-      const eventDayTime = eventDate.split('T');
-      this.scheduledDay = eventDayTime[0];
-      this.scheduledTime = eventDayTime[1].split('.')[0];
+      // @todo it is a bad idea to use split here. update dateUtils for this case
+      this.scheduledDay = eventDate.split('T')[0];
+      this.scheduledTime = getFullTime(eventDate);
     } else {
       this.scheduledDay = this.eventDay;
       this.scheduledTime = '09:00:00';
@@ -101,12 +101,6 @@ export default {
 
     isPartlyCancelledAppointment() {
       return this.event.cancellations.length > 0;
-    },
-
-    cancelBtn() {
-      return this.event.cancellations.includes(this.user.userEmail)
-        ? 'recover me'
-        : 'remove me from event';
     },
 
     // @todo fix json comparing, and loop through the arrays of participants and cancellations

@@ -121,7 +121,7 @@ export default {
       'loadCurrentMonthAppointments',
       'removeSelectedAppointment',
       'handleCancellation',
-      'cloneAppointment',
+      'addAppointment',
     ]),
 
     handleDateClick(arg) {
@@ -157,7 +157,6 @@ export default {
       }
 
       this.hideMenu();
-      // this.hideModal();
     },
 
     async toggleUsersCancellation() {
@@ -176,7 +175,14 @@ export default {
     async onDuplicateAppointment() {
       // use this.eventData
       console.log('Duplicate: ', this.user, this.eventData);
-      const eventClone = {};
+      const eventClone = {
+        eventDate: new Date(this.eventData.eventDate),
+        title: `${this.eventData.title} (copy)`,
+        authorEmail: this.user.userEmail,
+        authorId: this.user.userId,
+        cancellations: this.eventData.cancellations,
+        participants: this.eventData.participants,
+      };
       const clearCancellations = this.eventData.cancellations.length > 0
         && window.confirm('Do you want to delete all the users from the cancellations list?');
 
@@ -188,15 +194,10 @@ export default {
         eventClone.participants = this.eventData.participants
             .filter((participant) => participant !== this.user.userEmail)
             .concat([this.eventData.author.email]);
-        eventClone.authorId = this.user.userId;
       }
 
-      const newAppointment = {
-        ...this.eventData,
-        ...eventClone,
-      };
-      const cloneStatus = await this.cloneAppointment(newAppointment);
-      console.log('Duplicate status: ', cloneStatus);
+      const cloneStatus = await this.addAppointment(eventClone);
+
       // refetch events and drop selected appointments id
       if (cloneStatus.success) {
         this.onHideModal(cloneStatus);
@@ -213,9 +214,6 @@ export default {
 
     hideMenu() {
       this.selectedAppointmentId = null;
-      this.menuPosition = {
-        maxHeight: null,
-      };
       this.isShowMenu = false;
     },
 
@@ -225,14 +223,9 @@ export default {
         top: `${event.y}px`,
       };
       const documentWidth = document.documentElement.clientWidth;
-      const documentHeight = document.documentElement.clientHeight;
 
       if ((event.x + 200) > documentWidth) {
         coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
-      }
-
-      if ((event.y + 150) > documentHeight) {
-        coords.maxHeight = '150px';
       }
 
       return coords;
