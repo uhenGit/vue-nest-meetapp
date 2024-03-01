@@ -1,7 +1,7 @@
 <script>
 import { mapActions, mapWritableState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
-import { isAuthor, isValidEmail, getFullTime } from '@/utils';
+import { isAuthor, isValidEmail, getDateStr } from '@/utils';
 import ChipElement from '@/components/UI/ChipElement.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
@@ -56,10 +56,9 @@ export default {
 
     if (!this.eventDay) {
       this.event = structuredClone(this.eventData);
-      const { eventDate } = this.eventData;
-      // @todo it is a bad idea to use split here. update dateUtils for this case
-      this.scheduledDay = eventDate.split('T')[0];
-      this.scheduledTime = getFullTime(eventDate);
+      const { time, date } = getDateStr(this.eventData.eventDate);
+      this.scheduledDay = date;
+      this.scheduledTime = time;
     } else {
       this.scheduledDay = this.eventDay;
       this.scheduledTime = '09:00:00';
@@ -97,10 +96,6 @@ export default {
 
     isCancelledAppointment() {
       return this.event.cancelled ? 'Yes' : 'No';
-    },
-
-    isPartlyCancelledAppointment() {
-      return this.event.cancellations.length > 0;
     },
 
     // @todo fix json comparing, and loop through the arrays of participants and cancellations
@@ -153,6 +148,12 @@ export default {
       return JSON.stringify(this.event[fieldName]) !== JSON.stringify(this.eventData[fieldName]);
     },
 
+    setChipType(email) {
+      return this.event.cancellations.includes(email)
+        ? 'warning'
+        : 'success';
+    },
+
     checkDateIdentity(dateField) {
       if (!this.eventDay) {
         const eventDayTime = this.eventData.eventDate.split('T');
@@ -190,8 +191,12 @@ export default {
       this.isInvalidEmail = false;
     },
 
-    onHideModal({ success }) {
-      this.$emit('hide-modal', { success });
+    onHideModal(evt) {
+      this.hideMenu();
+
+      if (evt.target?.role !== 'menuitem') {
+        this.$emit('hide-modal', { success: evt.success });
+      }
     },
 
     showMenu({ evt }) {
@@ -200,9 +205,6 @@ export default {
     },
 
     hideMenu() {
-      this.menuPosition = {
-        maxHeight: null,
-      };
       this.isShowMenu = false;
     },
 
@@ -212,14 +214,9 @@ export default {
         top: `${event.y}px`,
       };
       const documentWidth = document.documentElement.clientWidth;
-      const documentHeight = document.documentElement.clientHeight;
 
       if ((event.x + 200) > documentWidth) {
         coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
-      }
-
-      if ((event.y + 150) > documentHeight) {
-        coords.maxHeight = '150px';
       }
 
       return coords;
@@ -366,7 +363,7 @@ export default {
                   ref="participantEmail"
                   v-model="participantEmail"
                   class="rounded-md p-1 w-full"
-                  @keyup.enter="addParticipant"
+                  @keyup.enter.prevent="addParticipant"
                   @input="clearFrames"
                 />
                 <span class="text-xs">
@@ -396,6 +393,7 @@ export default {
                 <chip-element
                   :content="participant"
                   :removable="eventData.author?.email === user.userEmail"
+                  :type="setChipType(participant)"
                   @remove-action="onDeleteParticipant(participant)"
                 />
               </template>
@@ -415,42 +413,9 @@ export default {
               </p>
             </td>
           </tr>
-          <tr
-            v-if="isPartlyCancelledAppointment"
-            class="leading-5 border-b-2"
-          >
-            <td class="pr-6">Participants that cancelled</td>
-            <td
-              class="flex flex-wrap"
-              :class="{
-              'border-orange-700 bg-orange-100': (hasChanges('cancellations') && !saveChanges)
-            }">
-              <template
-                v-for="(refuser, idx) in event.cancellations"
-                :key="idx"
-              >
-                <chip-element :content="refuser"/>
-              </template>
-            </td>
-          </tr>
         </tbody>
       </table>
       <div class="mt-10 w-full flex justify-end">
-<!--        <div>-->
-<!--          <button-->
-<!--            v-if="eventData.id && isAuthor"-->
-<!--            class="text-red-800 bg-white hover:bg-red-800 hover:text-white border rounded-md px-20 pb-0.5 mr-2"-->
-<!--            @click.stop="onRemoveAppointment"-->
-<!--          >-->
-<!--            delete-->
-<!--          </button>-->
-<!--          <button-->
-<!--            class="text-orange-400 bg-white hover:bg-orange-400 hover:text-white border rounded-md px-20 pb-0.5"-->
-<!--            @click.stop="$emit('toggle-cancellation')"-->
-<!--          >-->
-<!--            {{ cancelBtn }}-->
-<!--          </button>-->
-<!--        </div>-->
         <button
           v-if="isAuthor"
           class="text-white rounded-md px-20 pb-0.5"
@@ -483,7 +448,7 @@ export default {
               class="hover:bg-gray-700 px-3 py-2 rounded-b-md"
               :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
               role="menuitem"
-              @click="item.action"
+              @click.prevent="item.action"
           >
             {{ item.name }}
           </li>

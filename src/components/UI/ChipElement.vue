@@ -1,5 +1,8 @@
 <script setup>
-defineProps({
+import { computed } from 'vue';
+import { BG_TYPES } from '@/utils/index.js';
+
+const props = defineProps({
   content: {
     type: String,
     required: true,
@@ -8,14 +11,22 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  type: {
+    type: String,
+    default: 'success',
+  },
 });
 
 defineEmits(['remove-action']);
+
+const styles = computed(() => {
+  return `${BG_TYPES[props.type]} ${ props.removable ? 'pr-1' : 'pb-1 pr-1.5' }`;
+});
 </script>
 <template>
   <div
-    class="bg-orange-300 text-white flex rounded-2xl cursor-default pr-1 pl-1.5 py-0.5 my-1 mr-1.5 font-bold"
-    :class="{ 'pb-1 pr-1.5': !removable }"
+    class="text-white flex rounded-2xl cursor-default pr-1 pl-1.5 py-0.5 my-1 mr-1.5 font-bold"
+    :class="styles"
   >
     <span class="">
       {{ content }}

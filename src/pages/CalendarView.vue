@@ -7,7 +7,7 @@ import { mapActions, mapWritableState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
-import { isAuthor } from '@/utils/usersAppointment.js';
+import { isAuthor, getDate } from '@/utils';
 
 export default {
   name: 'CalendarView',
@@ -26,10 +26,8 @@ export default {
         initialView: 'dayGridMonth',
         dateClick: this.handleDateClick,
         events: (info, successCb, failureCb) => {
-          const period = {
-            year: info.start.getFullYear(),
-            month: info.start.getMonth() + 1,
-          };
+          const { year, month } = getDate(info.start);
+          const period = { year, month };
           this.loadCurrentMonthAppointments(period)
             .then((response) => {
               if (response.status === 'Unauthorized' || !response.status) {
@@ -76,8 +74,8 @@ export default {
         },
         {
           name: 'Cancel appointment',
-          disable: this.disabled,
-          action: this.disabled ? null : this.toggleUsersCancellation,
+          disable: false,
+          action: this.toggleUsersCancellation,
         },
         {
           name: 'Duplicate appointment',
@@ -173,8 +171,6 @@ export default {
     },
 
     async onDuplicateAppointment() {
-      // use this.eventData
-      console.log('Duplicate: ', this.user, this.eventData);
       const eventClone = {
         eventDate: new Date(this.eventData.eventDate),
         title: `${this.eventData.title} (copy)`,
