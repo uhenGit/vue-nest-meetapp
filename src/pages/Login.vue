@@ -1,6 +1,5 @@
 <script>
 import { mapActions,mapState } from 'pinia';
-// import { useUserStore } from '@/stores/user.js';
 import { useUserStore } from '@/stores';
 
 export default {
