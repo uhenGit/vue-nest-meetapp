@@ -64,6 +64,7 @@ export default {
       this.scheduledTime = '09:00:00';
       this.event.authorId = this.user.userId;
       this.event.authorEmail = this.user.userEmail;
+      this.event.participants.push(this.user.userEmail);
     }
   },
 
@@ -80,7 +81,7 @@ export default {
         {
           name: 'Cancel appointment',
           disable: false,
-          action: () => this.$emit('toggle-cancellation'),
+          action: this.handleCancellation,
         },
         {
           name: 'Duplicate appointment',
@@ -94,8 +95,8 @@ export default {
       return isAuthor(this.event.authorId);
     },
 
-    isCancelledAppointment() {
-      return this.event.cancelled ? 'Yes' : 'No';
+    isCancelledByAuthor() {
+      return !this.eventDay && this.eventData.cancellations.includes(this.eventData.author.email);
     },
 
     // @todo fix json comparing, and loop through the arrays of participants and cancellations
@@ -106,8 +107,8 @@ export default {
         title: this.event.title,
       };
       const eventDataClone = {
-        cancellations: this.eventData.cancellations,
-        participants: this.eventData.participants,
+        cancellations: this.eventData.cancellations || [],
+        participants: this.eventData.participants || [],
         title: this.eventData.title,
       };
       const dateIdentity = this.checkDateIdentity('time') || this.checkDateIdentity('day');
@@ -156,11 +157,11 @@ export default {
 
     checkDateIdentity(dateField) {
       if (!this.eventDay) {
-        const eventDayTime = this.eventData.eventDate.split('T');
+        const { date, time } = getDateStr(this.eventData.eventDate);
 
         return dateField === 'day'
-          ? this.scheduledDay !== eventDayTime[0]
-          : this.scheduledTime !== eventDayTime[1].split('.')[0];
+          ? this.scheduledDay !== date
+          : this.scheduledTime !== time;
       } else {
         return dateField === 'day'
           ? this.scheduledDay !== this.eventDay
@@ -238,6 +239,10 @@ export default {
 
     onDeleteParticipant(emailToDelete) {
       this.event.participants = this.event.participants.filter((email) => email !== emailToDelete);
+    },
+
+    handleCancellation() {
+      this.$emit('toggle-cancellation');
     },
 
     async onSubmit() {
@@ -370,12 +375,19 @@ export default {
                   Hit the Enter key to add and validate emails
                 </span>
               </div>
-              <span
+              <button
                 v-if="isInvalidEmail"
-                class="absolute right-3 bottom-4 after:content-['x'] after:ml-1.5 after:text-red-700 after:cursor-pointer"
+                class="absolute right-3 bottom-7 ml-1 opacity-60 inline-flex items-center justify-center rounded-full text-orange-700 cursor-pointer bg-white"
                 @click="clearEmail"
               >
-              </span>
+                <svg
+                    viewBox="0 0 24 24"
+                    class="w-5"
+                >
+                  <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z">
+                  </path>
+                </svg>
+              </button>
             </td>
           </tr>
           <tr class="leading-5 border-b-2">
@@ -392,7 +404,7 @@ export default {
               >
                 <chip-element
                   :content="participant"
-                  :removable="eventData.author?.email === user.userEmail"
+                  :removable="isAuthor"
                   :type="setChipType(participant)"
                   @remove-action="onDeleteParticipant(participant)"
                 />
@@ -406,11 +418,23 @@ export default {
             </td>
           </tr>
           <tr class="leading-5 border-b-2">
-            <td class="pr-6">Cancelled by all participants</td>
-            <td>
-              <p class="p-1">
-                {{ isCancelledAppointment }}
-              </p>
+            <td class="pr-6">Cancelled by author {{ isCancelledByAuthor ? '(Cancelled)' : '(Not cancelled)' }}</td>
+            <td class="pb-1.5">
+              <!-- TW Elements is free under AGPL, with commercial license required for specific uses. See more details: https://tw-elements.com/license/ and contact us for queries at tailwind@mdbootstrap.com -->
+              <input
+                v-model="isCancelledByAuthor"
+                class="mr-2 h-3.5 w-8 appearance-none rounded-[0.4375rem] bg-neutral-300 before:pointer-events-none before:absolute before:h-3.5 before:w-3.5 before:rounded-full before:bg-transparent before:content-[''] after:absolute after:z-[2] after:-mt-[0.1875rem] after:h-5 after:w-5 after:rounded-full after:border-none after:bg-neutral-100 after:shadow-[0_0px_3px_0_rgb(0_0_0_/_7%),_0_2px_2px_0_rgb(0_0_0_/_4%)] after:transition-[background-color_0.2s,transform_0.2s] after:content-[''] checked:bg-main-light checked:after:absolute checked:after:z-[2] checked:after:-mt-[3px] checked:after:ml-[1.0625rem] checked:after:h-5 checked:after:w-5 checked:after:rounded-full checked:after:border-none checked:after:bg-main-light checked:after:shadow-[0_3px_1px_-2px_rgba(0,0,0,0.2),_0_2px_2px_0_rgba(0,0,0,0.14),_0_1px_5px_0_rgba(0,0,0,0.12)] checked:after:transition-[background-color_0.2s,transform_0.2s] checked:after:content-[''] hover:cursor-pointer focus:outline-none focus:ring-0 focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-[3px_-1px_0px_13px_rgba(0,0,0,0.6)] focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-5 focus:after:w-5 focus:after:rounded-full focus:after:content-[''] checked:focus:border-main-light checked:focus:bg-main-light checked:focus:before:ml-[1.0625rem] checked:focus:before:scale-100 checked:focus:before:shadow-[3px_-1px_0px_13px_#3b71ca] checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] dark:bg-neutral-600 dark:after:bg-neutral-400 dark:checked:bg-main-light dark:checked:after:bg-main-light dark:focus:before:shadow-[3px_-1px_0px_13px_rgba(255,255,255,0.4)]"
+                type="checkbox"
+                role="switch"
+                id="flexSwitchCheckDefault"
+                :disabled="!isAuthor"
+                @change="handleCancellation"
+              />
+              <label
+                class="inline-block pl-[0.15rem] hover:cursor-pointer pt-1"
+                for="flexSwitchCheckDefault"
+              >Only owner can change it</label
+              >
             </td>
           </tr>
         </tbody>
