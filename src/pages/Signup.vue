@@ -1,45 +1,56 @@
 <script>
 import { mapActions } from 'pinia';
 import { useUserStore } from '@/stores';
+import { isValidEmail } from '@/utils/index.js';
 
 export default {
   name: 'SignUp',
 
   data() {
     return {
-      email: '',
-      password: '',
-      userName: '',
-      confirmPassword: '',
+      email: null,
+      password: null,
+      userName: null,
+      confirmPassword: null,
+      isValidationFailed: false,
     };
   },
 
   computed: {
-    isFormValid() {
-      return this.email
-        && this.password
-        && this.password === this.confirmPassword;
+    isPasswordMatched() {
+      return this.password.trim() && this.password === this.confirmPassword;
     },
   },
 
   methods: {
     ...mapActions(useUserStore, ['signup', 'isLoggedIn', 'userError']),
+
+    handleEmailInput(evt) {
+      this.isValidationFailed = false;
+      this.email = evt.target.value;
+    },
+
     async onSignUp() {
-      console.log('sign up: ', this.email, this.password);
-      if (!this.isFormValid) {
-        // notify about invalid form fields
-        return;
-      }
+      this.isValidationFailed = false;
+      try {
+        if (!isValidEmail(this.email) || !this.isPasswordMatched) {
+          this.isValidationFailed = true;
 
-      const credentials = {
-        userName: this.userName,
-        email: this.email,
-        password: this.password,
-      };
-      await this.signup(credentials);
+          return;
+        }
 
-      if (this.isLoggedIn) {
-        this.$router.push({ name: 'home' });
+        const credentials = {
+          userName: this.userName,
+          email: this.email,
+          password: this.password,
+        };
+        await this.signup(credentials);
+
+        if (this.isLoggedIn) {
+          this.$router.push({ name: 'home' });
+        }
+      } catch (err) {
+        console.log('Signup error: ', err.message);
       }
     },
   },
@@ -88,24 +99,32 @@ export default {
           <label class="block font-medium leading-6 text-gray-900">
             Email address
             <input
-                v-model="email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              :value="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              :class="{ 'border-red-700 border-2': isValidationFailed && isPasswordMatched }"
+              @input="handleEmailInput"
             >
+            <span
+              v-if="isValidationFailed && isPasswordMatched"
+              class="text-red-700 text-xs"
+            >
+              Invalid email
+            </span>
           </label>
         </div>
         <div>
           <label class="block font-medium leading-6 text-gray-900">
             User name
             <input
-                v-model="userName"
-                name="name"
-                type="text"
-                autocomplete="user-name"
-                class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              v-model="userName"
+              name="name"
+              type="text"
+              autocomplete="user-name"
+              class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
             >
           </label>
         </div>
@@ -113,12 +132,13 @@ export default {
           <label class="block font-medium leading-6 text-gray-900">
               Password
             <input
-                v-model="password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                required
-                class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              v-model="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+              class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              :class="{ 'border-red-700 border-2': isValidationFailed && !isPasswordMatched }"
             >
           </label>
         </div>
@@ -126,13 +146,20 @@ export default {
           <label class="block font-medium leading-6 text-gray-900">
             Confirm password
             <input
-                v-model="confirmPassword"
+              v-model="confirmPassword"
               name="confirm"
               type="password"
               autocomplete="confirm-password"
               required
               class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              :class="{ 'border-red-700 border-2': isValidationFailed && !isPasswordMatched }"
             >
+            <span
+                v-if="isValidationFailed && !isPasswordMatched"
+                class="text-red-700 text-xs"
+            >
+              Password does not matched
+            </span>
           </label>
         </div>
         <div>

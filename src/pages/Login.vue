@@ -1,15 +1,17 @@
 <script>
 import { mapActions,mapState } from 'pinia';
 import { useUserStore } from '@/stores';
+import { isValidEmail } from '@/utils/index.js';
 
 export default {
   name: 'LogIn',
 
   data() {
     return {
-      email: '',
-      password: '',
-      loginError: '',
+      email: null,
+      password: null,
+      loginError: null,
+      isValidationFailed: false,
     }
   },
 
@@ -20,14 +22,25 @@ export default {
   methods: {
     ...mapActions(useUserStore, ['login']),
     async onLogIn() {
-      const credentials = {
-        email: this.email,
-        password: this.password,
-      };
-      await this.login(credentials);
+      this.isValidationFailed = false;
+      try {
+        if (!isValidEmail(this.email)) {
+          this.isValidationFailed = true;
 
-      if (this.isLoggedIn) {
-        this.$router.push({ name: 'home' })
+          return;
+        }
+
+        const credentials = {
+          email: this.email,
+          password: this.password,
+        };
+        await this.login(credentials);
+
+        if (this.isLoggedIn) {
+          this.$router.push({ name: 'home' })
+        }
+      } catch (err) {
+        console.log('Login error: ', err.message);
       }
     },
   },
@@ -75,12 +88,20 @@ export default {
           <label class="block font-medium leading-6 text-gray-900">
             Email address
             <input
-                v-model="email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6">
+              v-model="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+              :class="{ 'border-red-700 border-2': isValidationFailed }"
+            />
+            <span
+              v-if="isValidationFailed"
+              class="text-red-700 text-xs"
+            >
+              Invalid email
+            </span>
           </label>
         </div>
 
