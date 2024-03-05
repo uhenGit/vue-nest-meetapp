@@ -55,7 +55,7 @@ export default {
         : 'You';
 
     if (!this.eventDay) {
-      this.event = structuredClone(this.eventData);
+      this.event = { ...this.eventData };
       const { time, date } = getDateStr(this.eventData.eventDate);
       this.scheduledDay = date;
       this.scheduledTime = time;
@@ -75,7 +75,7 @@ export default {
       return [
         {
           name: 'Delete appointment',
-          disable: this.eventData.id && !this.isAuthor,
+          disable: (this.eventData.id && !this.isAuthor) || !this.eventData.id,
           action: this.onRemoveAppointment,
         },
         {
@@ -95,8 +95,17 @@ export default {
       return isAuthor(this.event.authorId);
     },
 
-    isCancelledByAuthor() {
-      return !this.eventDay && this.eventData.cancellations.includes(this.eventData.author.email);
+    isCancelledByAuthor: {
+      get() {
+        return !this.eventDay && this.eventData.cancellations.includes(this.eventData.author.email);
+      },
+      set(val) {
+        if(val) {
+          this.event.cancellations.push(this.user.userEmail);
+        } else {
+          this.event.cancellations = this.event.cancellations.filter((email) => email !== this.user.userEmail)
+        }
+      }
     },
 
     // @todo fix json comparing, and loop through the arrays of participants and cancellations

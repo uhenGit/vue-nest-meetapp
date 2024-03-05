@@ -25,6 +25,7 @@ export default {
         plugins: [dayGridPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
         dateClick: this.handleDateClick,
+        eventClick: this.handleEventClick,
         events: (info, successCb, failureCb) => {
           const { year, month } = getDate(info.start);
           const period = { year, month };
@@ -33,7 +34,7 @@ export default {
               if (response.status === 'Unauthorized' || !response.status) {
                 failureCb(response.status);
               } else {
-                successCb(this.activeAppointments.map((appointment) => ({
+                successCb(this.visibleAppointments.map((appointment) => ({
                       ...appointment,
                       start: appointment.eventDate,
                     })
@@ -41,7 +42,6 @@ export default {
               }
             })
             .catch(() => failureCb('Get appointments error')); // @todo implement better handler
-
         },
         showNonCurrentDates: false,
       },
@@ -64,6 +64,18 @@ export default {
   computed: {
     ...mapWritableState(useAppointmentStore, ['activeAppointments']),
     ...mapWritableState(useUserStore, ['user']),
+
+    isMoreThanTwoAppointments() {
+      return this.activeAppointments.length > 2;
+    },
+
+    visibleAppointments() {
+      if (this.isMoreThanTwoAppointments) {
+        return this.activeAppointments.slice(0,2);
+      }
+
+      return this.activeAppointments;
+    },
 
     menuItems() {
       return [
@@ -122,8 +134,17 @@ export default {
       'addAppointment',
     ]),
 
+    handleEventClick(evt) {
+      console.log('EVENT: ', evt);
+    },
+
     handleDateClick(arg) {
-      this.hideMenu();
+      if (this.isShowMenu) {
+        this.hideMenu();
+
+        return;
+      }
+
       this.eventDay = arg.dateStr || null;
       this.selectedAppointmentId = arg.id;
       this.showModal();
@@ -147,10 +168,9 @@ export default {
     },
 
     async removeAppointment() {
-      const { status } = await this.removeSelectedAppointment(this.selectedAppointmentId);
+      const { status, id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
       // @todo handle else statement with the error notification
-      console.log('REMOVE: ', status, this.selectedAppointmentId);
-      if (status === 'removed') {
+      if (status === 'removed' && id === this.selectedAppointmentId) {
         this.onHideModal({ success: true });
       }
 
@@ -254,6 +274,9 @@ export default {
         />
       </div>
     </template>
+    <div v-if="isMoreThanTwoAppointments">
+      +2
+    </div>
   </full-calendar>
   <base-modal
     v-if="isModalActive"
