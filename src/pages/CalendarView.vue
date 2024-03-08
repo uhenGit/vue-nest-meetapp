@@ -7,7 +7,7 @@ import { mapActions, mapWritableState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
-import { isAuthor, getDate } from '@/utils';
+import { isAuthor, getDate, getDateStr } from '@/utils';
 
 export default {
   name: 'CalendarView',
@@ -32,13 +32,9 @@ export default {
           this.loadCurrentMonthAppointments(period)
             .then((response) => {
               if (response.status === 'Unauthorized' || !response.status) {
-                failureCb(response.status);
+                failureCb('Unauthorized');
               } else {
-                successCb(this.visibleAppointments.map((appointment) => ({
-                      ...appointment,
-                      start: appointment.eventDate,
-                    })
-                ))
+                successCb(this.visibleAppointments)
               }
             })
             .catch(() => failureCb('Get appointments error')); // @todo implement better handler
@@ -55,7 +51,7 @@ export default {
 
   beforeUnmount() {
     if (this.$refs.fullCalendar) {
-      this.$refs.fullCalendar.calendar.destroy();
+      this.$refs.fullCalendar.getApi().destroy();
     }
 
     this.selectedAppointmentId = null;
@@ -65,16 +61,60 @@ export default {
     ...mapWritableState(useAppointmentStore, ['activeAppointments']),
     ...mapWritableState(useUserStore, ['user']),
 
-    isMoreThanTwoAppointments() {
-      return this.activeAppointments.length > 2;
-    },
-
-    visibleAppointments() {
-      if (this.isMoreThanTwoAppointments) {
-        return this.activeAppointments.slice(0,2);
+    /**
+     * Handle current active appointments to add to every appointment, from the same day, an index,
+     * that represents a place of the appointment in the virtual collection of the 'same day appointments'
+     * @returns {Array} - same appointments array, but with the additional idx field
+     * */
+    processedAppointmentsBySameDay() {
+      if (!this.activeAppointments) {
+        return [];
       }
 
-      return this.activeAppointments;
+      const eventDateIndexes = {};
+
+      return this.activeAppointments.map((appointment) => {
+        const { date } = getDateStr(appointment.eventDate);
+
+        if (!Object.prototype.hasOwnProperty.call(eventDateIndexes, date)) {
+          eventDateIndexes[date] = 0;
+        } else {
+          eventDateIndexes[date]++;
+        }
+
+        return {
+          ...appointment,
+          sameDayCount: eventDateIndexes[date],
+          eventDay: date,
+          start: appointment.eventDate,
+        }
+      });
+    },
+
+    /**
+     * If the number of appointments for  one day is more than 2, slice to display only two of them
+     * */
+    visibleAppointments() {
+      const tempTwoDaysContainer = new Map();
+      const twoAppointmentsFromDay = this.processedAppointmentsBySameDay
+        .reduce((_, cV) => {
+          const { sameDayCount, eventDay } = cV;
+          const isContainerHasDay = tempTwoDaysContainer.has(eventDay);
+
+          if (!isContainerHasDay && sameDayCount === 0) {
+            tempTwoDaysContainer.set(eventDay, [cV]);
+          }
+
+          if (isContainerHasDay && sameDayCount === 1) {
+            const existingTempEvent = tempTwoDaysContainer.get(eventDay);
+            existingTempEvent.push(cV);
+            tempTwoDaysContainer.set(eventDay, existingTempEvent);
+          }
+
+          return Array.from(tempTwoDaysContainer.values());
+        }, []);
+
+      return twoAppointmentsFromDay.flat();
     },
 
     menuItems() {
@@ -150,23 +190,6 @@ export default {
       this.showModal();
     },
 
-    onHideModal(evt) {
-      if (evt.success) {
-        this.$refs.fullCalendar.calendar.refetchEvents();
-      }
-
-      this.hideModal();
-    },
-
-    showModal() {
-      this.isModalActive = true;
-    },
-
-    hideModal() {
-      this.selectedAppointmentId = null;
-      this.isModalActive = false;
-    },
-
     async removeAppointment() {
       const { status, id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
       // @todo handle else statement with the error notification
@@ -181,7 +204,7 @@ export default {
       const { status } = await this.handleCancellation(this.selectedAppointmentId);
 
       if (status === 'updated') {
-        this.$refs.fullCalendar.calendar.refetchEvents();
+        this.$refs.fullCalendar.getApi().refetchEvents();
 
         if (this.isShowMenu) {
           this.hideMenu();
@@ -222,6 +245,28 @@ export default {
       // @todo handle errors
     },
 
+    onHideModal(evt) {
+      if (evt.success) {
+        this.$refs.fullCalendar.getApi().refetchEvents();
+      }
+
+      this.hideModal();
+    },
+
+    showModal() {
+      this.isModalActive = true;
+    },
+
+    hideModal() {
+      this.selectedAppointmentId = null;
+      this.isModalActive = false;
+    },
+
+    isMoreThanTwo(day) {
+      return this.processedAppointmentsBySameDay
+        .find(({ eventDay, sameDayCount }) => eventDay === day && sameDayCount > 1);
+    },
+
     showMenu({ evt, itemId }) {
       this.menuPosition = this.setPosition(evt);
       this.selectedAppointmentId = itemId;
@@ -255,28 +300,33 @@ export default {
     :options="basicCalendarOptions"
   >
     <template #eventContent="arg">
-      <div
-        class="group flex justify-start pr-2 min-w-full text-white rounded-md"
-        :class="[ arg.event.extendedProps?.cancelled ? 'bg-gray-500' : 'bg-main-light' ]"
-        :title="arg.event.title"
-      >
-        <button
-          class="text-ellipsis pl-1.5 overflow-hidden w-full rounded-l-md text-xs"
-          :class="[ arg.event.extendedProps?.cancelled ? 'group-hover:bg-gray-600' : 'group-hover:bg-main-dark' ]"
-          role="switch"
-          @click="handleDateClick(arg.event)"
+      <div class="flex flex-col w-full">
+        <div
+          class="group flex justify-start pr-2 min-w-full text-white rounded-md"
+          :class="[ arg.event.extendedProps?.cancelled ? 'bg-gray-500' : 'bg-main-light' ]"
+          :title="arg.event.title"
         >
-          {{ arg.event.title }}
-        </button>
-        <menu-button
-          :content="arg.event.id"
-          @show-menu="showMenu"
-        />
+          <button
+            class="text-ellipsis pl-1.5 overflow-hidden w-full rounded-l-md text-xs"
+            :class="[ arg.event.extendedProps?.cancelled ? 'group-hover:bg-gray-600' : 'group-hover:bg-main-dark' ]"
+            role="switch"
+            @click="handleDateClick(arg.event)"
+          >
+            {{ arg.event.title }}
+          </button>
+          <menu-button
+            :content="arg.event.id"
+            @show-menu="showMenu"
+          />
+        </div>
+        <div
+          v-if="isMoreThanTwo(arg.event.extendedProps.eventDay)"
+          @click="showArgs(arg)"
+        >
+          +2
+        </div>
       </div>
     </template>
-    <div v-if="isMoreThanTwoAppointments">
-      +2
-    </div>
   </full-calendar>
   <base-modal
     v-if="isModalActive"
