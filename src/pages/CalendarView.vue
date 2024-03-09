@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useAppointmentStore, useUserStore } from '@/stores';
-import { mapActions, mapWritableState } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
@@ -51,6 +51,7 @@ export default {
 
   beforeUnmount() {
     if (this.$refs.fullCalendar) {
+      console.log('Destroy');
       this.$refs.fullCalendar.getApi().destroy();
     }
 
@@ -58,8 +59,8 @@ export default {
   },
 
   computed: {
-    ...mapWritableState(useAppointmentStore, ['activeAppointments']),
-    ...mapWritableState(useUserStore, ['user']),
+    ...mapState(useAppointmentStore, ['activeAppointments']),
+    ...mapState(useUserStore, ['user']),
 
     /**
      * Handle current active appointments to add to every appointment, from the same day, an index,
@@ -108,6 +109,17 @@ export default {
           if (isContainerHasDay && sameDayCount === 1) {
             const existingTempEvent = tempTwoDaysContainer.get(eventDay);
             existingTempEvent.push(cV);
+            tempTwoDaysContainer.set(eventDay, existingTempEvent);
+          }
+
+          if (isContainerHasDay && sameDayCount === 2) {
+            const existingTempEvent = tempTwoDaysContainer.get(eventDay);
+            existingTempEvent.push({
+              title: 'Display all',
+              start: `${eventDay}T22:59:59`,
+              id: '-1',
+              eventDay,
+            });
             tempTwoDaysContainer.set(eventDay, existingTempEvent);
           }
 
@@ -173,10 +185,6 @@ export default {
       'handleCancellation',
       'addAppointment',
     ]),
-
-    handleEventClick(evt) {
-      console.log('EVENT: ', evt);
-    },
 
     handleDateClick(arg) {
       if (this.isShowMenu) {
@@ -262,9 +270,8 @@ export default {
       this.isModalActive = false;
     },
 
-    isMoreThanTwo(day) {
-      return this.processedAppointmentsBySameDay
-        .find(({ eventDay, sameDayCount }) => eventDay === day && sameDayCount > 1);
+    goToPage(day) {
+      this.$router.push({ name: 'selected day', params: { selectedDay: day } });
     },
 
     showMenu({ evt, itemId }) {
@@ -302,6 +309,7 @@ export default {
     <template #eventContent="arg">
       <div class="flex flex-col w-full">
         <div
+          v-if="arg.event.id !== '-1'"
           class="group flex justify-start pr-2 min-w-full text-white rounded-md"
           :class="[ arg.event.extendedProps?.cancelled ? 'bg-gray-500' : 'bg-main-light' ]"
           :title="arg.event.title"
@@ -320,10 +328,11 @@ export default {
           />
         </div>
         <div
-          v-if="isMoreThanTwo(arg.event.extendedProps.eventDay)"
-          @click="showArgs(arg)"
+          v-else
+          class="cursor-pointer text-center text-xs border-b"
+          @click="goToPage(arg.event.extendedProps.eventDay)"
         >
-          +2
+          {{ arg.event.title }}
         </div>
       </div>
     </template>

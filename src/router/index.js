@@ -8,23 +8,18 @@ import { routes } from '@/router/routes.js';
 	});
 
 	router.beforeEach(async (to, from, next) => {
-		const userStore = useUserStore();
-		// const isLoggedIn = userStore.isLoggedIn || !!localStorage.getItem('access_token');
-		console.log('storage: ', userStore.isLoggedIn, to.name);
-
-		if (userStore.isLoggedIn && !to.meta.public && to.name !== 'home') {
-			return next({ name: 'home' });
+		if (to.name === 'login' || to.name === 'signup') {
+			return next();
 		}
+
+		const userStore = useUserStore();
+		console.log('storage: ', userStore.isLoggedIn, to.name);
 
 		if (!userStore.isLoggedIn && !to.meta.public) {
 			return next({
 				name: 'login',
 				query: { ...to.query, redirect: to.fullPath },
 			})
-		}
-
-		if (userStore.isLoggedIn && to.name === 'home') {
-			return next();
 		}
 
 		// @todo check it twice

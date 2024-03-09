@@ -1,5 +1,5 @@
 <script>
-import { mapActions, mapWritableState } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import { useAppointmentStore, useUserStore } from '@/stores/index.js';
 import { isAuthor, isValidEmail, getDateStr } from '@/utils';
 import ChipElement from '@/components/UI/ChipElement.vue';
@@ -69,7 +69,7 @@ export default {
   },
 
   computed: {
-    ...mapWritableState(useUserStore, ['user']),
+    ...mapState(useUserStore, ['user']),
 
     menuItems() {
       return [

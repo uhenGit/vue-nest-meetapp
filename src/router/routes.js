@@ -3,6 +3,9 @@ export const routes = [
 		path: '/',
 		name: 'home',
 		component: () => import('@/pages/CalendarView.vue'),
+		meta: {
+			public: false,
+		},
 	},
 	{
 		path: '/login',
@@ -18,6 +21,14 @@ export const routes = [
 		component: () => import('@/pages/Signup.vue'),
 		meta: {
 			public: true,
+		},
+	},
+	{
+		path: '/:selectedDay',
+		name: 'selected day',
+		component: () => import('@/pages/DayAppointments.vue'),
+		meta: {
+			public: false,
 		},
 	},
 	{
