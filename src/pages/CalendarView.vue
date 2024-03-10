@@ -93,7 +93,8 @@ export default {
     },
 
     /**
-     * If the number of appointments for  one day is more than 2, slice to display only two of them
+     * If the number of appointments for one day is more than 2, slice to display only two of them
+     * and a link to the page with the full list
      * */
     visibleAppointments() {
       const tempTwoDaysContainer = new Map();
