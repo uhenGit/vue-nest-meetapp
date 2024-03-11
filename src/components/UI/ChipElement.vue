@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { BG_TYPES } from '@/utils/index.js';
+import { BG_TYPES } from '@/utils';
 
 const props = defineProps({
   content: {

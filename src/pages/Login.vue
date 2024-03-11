@@ -1,7 +1,7 @@
 <script>
 import { mapActions,mapState } from 'pinia';
 import { useUserStore } from '@/stores';
-import { isValidEmail } from '@/utils/index.js';
+import { isValidEmail } from '@/utils';
 
 export default {
   name: 'LogIn',

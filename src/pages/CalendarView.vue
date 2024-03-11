@@ -7,7 +7,7 @@ import { mapActions, mapState } from 'pinia';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
-import { isAuthor, getDate, getDateStr } from '@/utils';
+import { isAuthor, getDate, getDateStr, setPosition } from '@/utils';
 
 export default {
   name: 'CalendarView',
@@ -44,7 +44,7 @@ export default {
       eventDay: null,
       isModalActive: false,
       isShowMenu: false,
-      menuPosition: {},
+      menuPosition: null,
       selectedAppointmentId: null,
     }
   },
@@ -271,12 +271,8 @@ export default {
       this.isModalActive = false;
     },
 
-    goToPage(day) {
-      this.$router.push({ name: 'selected day', params: { selectedDay: day } });
-    },
-
     showMenu({ evt, itemId }) {
-      this.menuPosition = this.setPosition(evt);
+      this.menuPosition = setPosition(evt);
       this.selectedAppointmentId = itemId;
       this.isShowMenu = true;
     },
@@ -284,20 +280,7 @@ export default {
     hideMenu() {
       this.selectedAppointmentId = null;
       this.isShowMenu = false;
-    },
-
-    setPosition(event) {
-      const coords = {
-        left: `${event.x}px`,
-        top: `${event.y}px`,
-      };
-      const documentWidth = document.documentElement.clientWidth;
-
-      if ((event.x + 200) > documentWidth) {
-        coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
-      }
-
-      return coords;
+      this.menuPosition = null;
     },
   },
 }
@@ -328,13 +311,13 @@ export default {
             @show-menu="showMenu"
           />
         </div>
-        <div
+        <router-link
           v-else
-          class="cursor-pointer text-center text-xs border-b"
-          @click="goToPage(arg.event.extendedProps.eventDay)"
+          class="font-semibold text-indigo-600 hover:text-indigo-500"
+          :to="{ name: 'selected day', params: { selectedDay: arg.event.extendedProps.eventDay }}"
         >
           {{ arg.event.title }}
-        </div>
+        </router-link>
       </div>
     </template>
   </full-calendar>

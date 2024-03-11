@@ -1,7 +1,7 @@
 <script>
 import { mapActions, mapState } from 'pinia';
-import { useAppointmentStore, useUserStore } from '@/stores/index.js';
-import { isAuthor, isValidEmail, getDateStr } from '@/utils';
+import { useAppointmentStore, useUserStore } from '@/stores';
+import { isAuthor, isValidEmail, getDateStr, setPosition } from '@/utils';
 import ChipElement from '@/components/UI/ChipElement.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
@@ -210,26 +210,12 @@ export default {
     },
 
     showMenu({ evt }) {
-      this.menuPosition = this.setPosition(evt);
+      this.menuPosition = setPosition(evt);
       this.isShowMenu = true;
     },
 
     hideMenu() {
       this.isShowMenu = false;
-    },
-
-    setPosition(event) {
-      const coords = {
-        left: `${event.x}px`,
-        top: `${event.y}px`,
-      };
-      const documentWidth = document.documentElement.clientWidth;
-
-      if ((event.x + 200) > documentWidth) {
-        coords.left = `${event.x - (200 - (documentWidth - event.x))}px`;
-      }
-
-      return coords;
     },
 
     onRemoveAppointment() {

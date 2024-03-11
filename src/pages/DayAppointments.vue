@@ -1,14 +1,18 @@
 <script>
 import { mapState } from 'pinia';
-import { getDateStr } from '@/utils/index.js';
-import { useAppointmentStore } from '@/stores/index.js';
+import { getDateStr, setPosition } from '@/utils';
+import { useAppointmentStore } from '@/stores';
 import BaseModal from '@/components/Modals/BaseModal.vue';
+import ContextMenu from '@/components/Modals/ContextMenu.vue';
+import MenuButton from '@/components/UI/MenuButton.vue';
 
 export default {
   name: 'DayAppointments',
 
   components: {
     BaseModal,
+    ContextMenu,
+    MenuButton,
   },
 
   beforeRouteEnter(from, to, next) {
@@ -20,9 +24,12 @@ export default {
   data() {
     return {
       selectedDay: null,
-      isShowModal: false,
+      isModalActive: false,
       eventData: null,
       eventDay: null,
+      isShowMenu: false,
+      menuPosition: null,
+      selectedAppointmentId: null,
     }
   },
 
@@ -48,11 +55,23 @@ export default {
   methods: {
     showModal(event) {
       this.eventData = event;
-      this.isShowModal = true;
+      this.isModalActive = true;
     },
 
     onHideModal() {
-      this.isShowModal = false;
+      this.isModalActive = false;
+    },
+
+    showMenu({ evt, itemId }) {
+      this.menuPosition = setPosition(evt);
+      this.selectedAppointmentId = itemId;
+      this.isShowMenu = true;
+    },
+
+    hideMenu() {
+      this.selectedAppointmentId = null;
+      this.isShowMenu = false;
+      this.menuPosition = null;
     },
   },
 }
@@ -143,14 +162,23 @@ export default {
             View details
           </button>
         </div>
+        <menu-button
+          :content="appointment.id"
+          @show-menu="showMenu"
+        />
       </div>
 
     </li>
   </ul>
   <base-modal
-    v-if="isShowModal"
+    v-if="isModalActive"
     :event-data="eventData"
     :event-day="eventDay"
     @hide-modal="onHideModal"
+  />
+  <context-menu
+    v-if="isShowMenu"
+    :menu-position="menuPosition"
+    @hide-menu="hideMenu"
   />
 </template>
