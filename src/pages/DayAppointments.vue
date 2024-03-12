@@ -1,6 +1,6 @@
 <script>
-import { mapState } from 'pinia';
-import { getDateStr, setPosition } from '@/utils';
+import { mapState, mapActions } from 'pinia';
+import { getDateStr, setPosition, isAuthor } from '@/utils';
 import { useAppointmentStore } from '@/stores';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
@@ -25,7 +25,6 @@ export default {
     return {
       selectedDay: null,
       isModalActive: false,
-      eventData: null,
       eventDay: null,
       isShowMenu: false,
       menuPosition: null,
@@ -35,6 +34,47 @@ export default {
 
   computed: {
     ...mapState(useAppointmentStore, ['activeAppointments']),
+
+    menuItems() {
+      return [
+        {
+          name: 'Delete appointment',
+          disable: this.disabled,
+          action: this.disabled ? null : this.onRemoveAppointment,
+        },
+        {
+          name: 'Cancel appointment',
+          disable: false,
+          action: this.toggleUsersCancellation,
+        },
+        {
+          name: 'Duplicate appointment',
+          disable: false,
+          action: this.onDuplicateAppointment,
+        },
+        {
+          name: 'View/edit details',
+          disable: false,
+          action: () => {
+            const selectedAppointment = this.selectedDayAppointments.find(({ id }) => id === this.selectedAppointmentId);
+            this.hideMenu();
+            this.showModal(selectedAppointment.id);
+          }
+        },
+      ];
+    },
+
+    disabled() {
+      return !!this.selectedAppointmentId && !isAuthor(this.eventData.authorId);
+    },
+
+    eventData() {
+      if (!this.selectedAppointmentId) {
+        return {};
+      }
+
+      return this.selectedDayAppointments.find(({ id }) => id === this.selectedAppointmentId);
+    },
 
     selectedDayAppointments() {
       return this.activeAppointments
@@ -53,25 +93,49 @@ export default {
   },
 
   methods: {
-    showModal(event) {
-      this.eventData = event;
+    ...mapActions(useAppointmentStore, ['removeSelectedAppointment', 'handleCancellation', 'addAppointment']),
+
+    onRemoveAppointment() {
+      const { status, id } = this.removeSelectedAppointment(this.selectedAppointmentId);
+
+      if (status === 'removed' && id ===this.selectedAppointmentId) {
+        this.hideModal();
+      }
+
+      this.hideMenu();
+    },
+
+    // @todo find out how to refetch data outside of calendar api
+    toggleUsersCancellation() {
+      const { status } = this.handleCancellation(this.selectedAppointmentId);
+
+      if (status === 'updated') {
+        this.hideMenu();
+      }
+    },
+
+    onDuplicateAppointment() {},
+
+    showModal(itemId) {
+      this.selectedAppointmentId = itemId;
       this.isModalActive = true;
     },
 
-    onHideModal() {
+    hideModal() {
       this.isModalActive = false;
+      this.selectedAppointmentId = null;
     },
 
     showMenu({ evt, itemId }) {
-      this.menuPosition = setPosition(evt);
       this.selectedAppointmentId = itemId;
+      this.menuPosition = setPosition(evt);
       this.isShowMenu = true;
     },
 
     hideMenu() {
-      this.selectedAppointmentId = null;
       this.isShowMenu = false;
       this.menuPosition = null;
+      this.selectedAppointmentId = null;
     },
   },
 }
@@ -97,7 +161,7 @@ export default {
       class="flex justify-between gap-x-6 py-5"
     >
       <div
-        class="flex gap-x-4 w-full items-center"
+        class="flex gap-x-4 w-full items-center group"
       >
         <span
           class="flex-none h-8 w-8 rounded-full bg-gray-200"
@@ -157,7 +221,7 @@ export default {
           <button
             class="text-ellipsis overflow-hidden rounded-md text-md text-white bg-main-light hover:bg-main-dark p-1 mt-2"
             :class="{ 'bg-gray-600': appointment.cancelled }"
-            @click="showModal(appointment)"
+            @click="showModal(appointment.id)"
           >
             View details
           </button>
@@ -174,11 +238,34 @@ export default {
     v-if="isModalActive"
     :event-data="eventData"
     :event-day="eventDay"
-    @hide-modal="onHideModal"
+    @hide-modal="hideModal"
   />
   <context-menu
     v-if="isShowMenu"
     :menu-position="menuPosition"
     @hide-menu="hideMenu"
-  />
+  >
+    <template #menu-name>
+      <p
+          class="text-white text-md mb-2 px-3"
+          role="menubar"
+      >
+        Appointment's actions
+      </p>
+    </template>
+    <template #menu-list>
+      <ul>
+        <li
+            v-for="(item, idx) in menuItems"
+            :key="idx"
+            class="hover:bg-gray-700 px-3 py-2 rounded-b-md"
+            :class="[ item.disable ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-red-300' ]"
+            role="menuitem"
+            @click="item.action"
+        >
+          {{ item.name }}
+        </li>
+      </ul>
+    </template>
+  </context-menu>
 </template>
