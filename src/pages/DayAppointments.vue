@@ -1,7 +1,7 @@
 <script>
 import { mapState, mapActions } from 'pinia';
-import { getDateStr, setPosition, isAuthor } from '@/utils';
-import { useAppointmentStore } from '@/stores';
+import { getDateStr, setPosition, isAuthor, getDate } from '@/utils';
+import { useAppointmentStore, useUserStore } from '@/stores';
 import BaseModal from '@/components/Modals/BaseModal.vue';
 import ContextMenu from '@/components/Modals/ContextMenu.vue';
 import MenuButton from '@/components/UI/MenuButton.vue';
@@ -18,12 +18,15 @@ export default {
   beforeRouteEnter(from, to, next) {
     next((vm) => {
       vm.selectedDay = from.params.selectedDay;
+      const { year, month } = getDate(new Date(vm.selectedDay));
+      vm.period = { year, month };
     });
   },
 
   data() {
     return {
       selectedDay: null,
+      period: null,
       isModalActive: false,
       eventDay: null,
       isShowMenu: false,
@@ -34,6 +37,7 @@ export default {
 
   computed: {
     ...mapState(useAppointmentStore, ['activeAppointments']),
+    ...mapState(useUserStore, ['user']),
 
     menuItems() {
       return [
@@ -93,30 +97,68 @@ export default {
   },
 
   methods: {
-    ...mapActions(useAppointmentStore, ['removeSelectedAppointment', 'handleCancellation', 'addAppointment']),
+    ...mapActions(useAppointmentStore, [
+      'loadCurrentMonthAppointments',
+      'removeSelectedAppointment',
+      'handleCancellation',
+      'addAppointment',
+    ]),
 
-    onRemoveAppointment() {
-      const { status, id } = this.removeSelectedAppointment(this.selectedAppointmentId);
+    async onRemoveAppointment() {
+      const { status, id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
 
       if (status === 'removed' && id ===this.selectedAppointmentId) {
         this.hideModal();
+        await this.loadCurrentMonthAppointments(this.period);
       }
 
       this.hideMenu();
     },
 
-    // @todo find out how to refetch data outside of calendar api
-    toggleUsersCancellation() {
-      const { status } = this.handleCancellation(this.selectedAppointmentId);
+    async toggleUsersCancellation() {
+      const { status } = await this.handleCancellation(this.selectedAppointmentId);
 
       if (status === 'updated') {
-        this.hideMenu();
+        await this.loadCurrentMonthAppointments(this.period);
+
+        if (this.isShowMenu) {
+          this.hideMenu();
+        }
       }
     },
 
-    onDuplicateAppointment() {},
+    async onDuplicateAppointment() {
+      const eventClone = {
+        eventDate: new Date(this.eventData.eventDate),
+        title: `${this.eventData.title} (copy)`,
+        authorEmail: this.user.userEmail,
+        authorId: this.user.userId,
+        cancellations: this.eventData.cancellations,
+        participants: this.eventData.participants,
+        cancelled: this.eventData.cancelled,
+      };
+      const clearCancellations = this.eventData.cancellations.length > 0
+          && window.confirm('Do you want to delete all the users from the cancellations list?');
+
+      if (clearCancellations) {
+        eventClone.cancellations = [];
+        eventClone.cancelled = false;
+      }
+
+      const cloneStatus = await this.addAppointment(eventClone);
+
+      if (cloneStatus.success) {
+        this.hideModal();
+        this.hideMenu();
+        await this.loadCurrentMonthAppointments(this.period);
+      }
+    },
 
     showModal(itemId) {
+      if (!itemId) {
+        this.eventDay = this.selectedDay;
+      }
+
       this.selectedAppointmentId = itemId;
       this.isModalActive = true;
     },
@@ -143,8 +185,12 @@ export default {
 <template>
   <div class="flex justify-around my-4">
     <div class="flex">
-      <p class="text-2xl">Details for:</p>&ensp;
-      <p>{{ selectedDay }}</p>
+      <p class="text-2xl">
+        Details for:
+      </p>&ensp;
+      <p>
+        {{ selectedDay }}
+      </p>
     </div>
     <router-link :to="{ name: 'home' }">
       <button class="bg-main-light px-2 text-white rounded-md mr-1">
@@ -152,25 +198,18 @@ export default {
       </button>
     </router-link>
   </div>
-  <ul
-    class="divide-gray-100 divide-y"
-  >
+  <ul class="divide-gray-100 divide-y">
     <li
       v-for="appointment in selectedDayAppointments"
       :key="appointment.id"
       class="flex justify-between gap-x-6 py-5"
     >
-      <div
-        class="flex gap-x-4 w-full items-center group"
-      >
-        <span
-          class="flex-none h-8 w-8 rounded-full bg-gray-200"
-        >
+      <div class="flex gap-x-4 w-full items-center group">
+        <span class="flex-none h-8 w-8 bg-gray-200">
           <svg
             v-if="appointment.cancelled"
             xmlns="http://www.w3.org/2000/svg"
             fill="currentColor"
-            class="bi bi-calendar-x"
             viewBox="0 0 16 16"
           >
             <path
@@ -184,7 +223,6 @@ export default {
             v-else
             xmlns="http://www.w3.org/2000/svg"
             fill="currentColor"
-            class="w-full h-full"
             viewBox="0 0 16 16"
           >
             <path
@@ -234,10 +272,21 @@ export default {
 
     </li>
   </ul>
+  <div class="w-full flex justify-center">
+    <button
+      class="w-3/4 bg-main-light text-white hover:bg-main-dark rounded-md my-3 py-1.5"
+      @click="showModal(null)"
+    >
+      Create appointment
+    </button>
+  </div>
   <base-modal
     v-if="isModalActive"
     :event-data="eventData"
     :event-day="eventDay"
+    @toggle-cancellation="toggleUsersCancellation"
+    @remove-appointment="onRemoveAppointment"
+    @duplicate-appointment="onDuplicateAppointment"
     @hide-modal="hideModal"
   />
   <context-menu

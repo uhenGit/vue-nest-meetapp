@@ -116,7 +116,7 @@ export default {
           if (isContainerHasDay && sameDayCount === 2) {
             const existingTempEvent = tempTwoDaysContainer.get(eventDay);
             existingTempEvent.push({
-              title: 'Display all',
+              title: '+ view all',
               start: `${eventDay}T22:59:59`,
               id: '-1',
               eventDay,
@@ -230,18 +230,14 @@ export default {
         authorId: this.user.userId,
         cancellations: this.eventData.cancellations,
         participants: this.eventData.participants,
+        cancelled: this.eventData.cancelled,
       };
       const clearCancellations = this.eventData.cancellations.length > 0
         && window.confirm('Do you want to delete all the users from the cancellations list?');
 
       if (clearCancellations) {
         eventClone.cancellations = [];
-      }
-
-      if (this.disabled) {
-        eventClone.participants = this.eventData.participants
-            .filter((participant) => participant !== this.user.userEmail)
-            .concat([this.eventData.author.email]);
+        eventClone.cancelled = false;
       }
 
       const cloneStatus = await this.addAppointment(eventClone);
@@ -313,7 +309,7 @@ export default {
         </div>
         <router-link
           v-else
-          class="font-semibold text-indigo-600 hover:text-indigo-500"
+          class="text-indigo-600 hover:text-indigo-500 text-center"
           :to="{ name: 'selected day', params: { selectedDay: arg.event.extendedProps.eventDay }}"
         >
           {{ arg.event.title }}

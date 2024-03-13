@@ -94,6 +94,9 @@ export const useAppointmentStore = defineStore(
 					delete changes.authorEmail;
 					delete changes.updatedAt;
 					delete changes.createdAt;
+					delete changes.eventDay;
+					delete changes.eventTime;
+					delete changes.isCancelled;
 					const response = await fetch(url, {
 						method: 'PUT',
 						headers: {

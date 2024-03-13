@@ -63,7 +63,7 @@ export class AppointmentService {
     }
   }
 
-  // In case of cloning existing appointment, cancellations could be not empty
+  // In case of cloning existing appointment, cancellations could be non-empty
   async addAppointment(dto: AddAppointmentDto): Promise<AppointmentItemType> {
     try {
       return this.prismaService.appointment.create({

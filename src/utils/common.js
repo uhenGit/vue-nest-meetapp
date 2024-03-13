@@ -1,3 +1,5 @@
+import { toRaw } from 'vue';
+
 export const setPosition = (event) => {
 	const coords = {
 		left: `${event.x}px`,
@@ -10,4 +12,25 @@ export const setPosition = (event) => {
 	}
 
 	return coords;
- }
+}
+export const toRawDeep = (prop) => {
+	const rawVal = toRaw(prop);
+
+	if (Array.isArray(rawVal)) {
+		return rawVal.map(toRawDeep);
+	}
+
+	if (rawVal === null) {
+		return null;
+	}
+
+	if (typeof rawVal === 'object') {
+		const entries = Object
+			.entries(rawVal)
+			.map(([key, val]) => [key, toRawDeep(val)]);
+
+		return Object.fromEntries(entries);
+	}
+
+	return rawVal;
+}
