@@ -25,7 +25,6 @@ export default {
         plugins: [dayGridPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
         dateClick: this.handleDateClick,
-        eventClick: this.handleEventClick,
         events: (info, successCb, failureCb) => {
           const { year, month } = getDate(info.start);
           const period = { year, month };
@@ -188,12 +187,7 @@ export default {
     ]),
 
     handleDateClick(arg) {
-      if (this.isShowMenu) {
-        this.hideMenu();
-
-        return;
-      }
-
+      this.hideMenu();
       this.eventDay = arg.dateStr || null;
       this.selectedAppointmentId = arg.id;
       this.showModal();
@@ -355,3 +349,8 @@ export default {
     </template>
   </context-menu>
 </template>
+<style>
+td.fc-daygrid-day {
+  height: 150px;
+}
+</style>

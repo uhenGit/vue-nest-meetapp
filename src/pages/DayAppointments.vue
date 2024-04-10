@@ -69,7 +69,7 @@ export default {
     },
 
     disabled() {
-      return !!this.selectedAppointmentId && !isAuthor(this.eventData.authorId);
+      return !!this.selectedAppointmentId && !isAuthor(this.eventData?.authorId);
     },
 
     eventData() {
@@ -81,6 +81,10 @@ export default {
     },
 
     selectedDayAppointments() {
+      if (!this.activeAppointments) {
+        return {};
+      }
+
       return this.activeAppointments
         .filter(({ eventDate }) => getDateStr(eventDate).date === this.selectedDay)
         .map((item) => {
@@ -108,8 +112,7 @@ export default {
       const { status, id } = await this.removeSelectedAppointment(this.selectedAppointmentId);
 
       if (status === 'removed' && id ===this.selectedAppointmentId) {
-        this.hideModal();
-        await this.loadCurrentMonthAppointments(this.period);
+        await this.hideModal({ success: true });
       }
 
       this.hideMenu();
@@ -148,9 +151,8 @@ export default {
       const cloneStatus = await this.addAppointment(eventClone);
 
       if (cloneStatus.success) {
-        this.hideModal();
+        await this.hideModal(cloneStatus);
         this.hideMenu();
-        await this.loadCurrentMonthAppointments(this.period);
       }
     },
 
@@ -163,7 +165,11 @@ export default {
       this.isModalActive = true;
     },
 
-    hideModal() {
+    async hideModal(evt) {
+      if (evt && evt.success) {
+        await this.loadCurrentMonthAppointments(this.period);
+      }
+
       this.isModalActive = false;
       this.selectedAppointmentId = null;
     },
